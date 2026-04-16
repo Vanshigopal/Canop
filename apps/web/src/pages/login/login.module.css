@@ -1,0 +1,76 @@
+.shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+.card {
+  width: 100%;
+  max-width: 440px;
+  padding: 40px;
+}
+.eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #ec4899;
+  margin: 12px 0 4px;
+}
+.title {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 30px;
+  letter-spacing: -0.025em;
+  color: #1e1a1a;
+  line-height: 1.05;
+  margin: 0 0 6px;
+}
+.italic {
+  font-style: italic;
+  color: #ec4899;
+}
+.caption {
+  font-size: 13px;
+  color: #7a716b;
+  margin: 0 0 28px;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: #a89e95;
+  font-size: 11px;
+  font-family: "JetBrains Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e8e1d6;
+}
+.demoLink {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 12.5px;
+  color: #4f46e5;
+  font-weight: 500;
+}
+.demoLink:hover {
+  text-decoration: underline;
+}
+.footerWrap {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}

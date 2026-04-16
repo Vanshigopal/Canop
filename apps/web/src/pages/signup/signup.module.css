@@ -1,0 +1,28 @@
+.shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+.card {
+  width: 100%;
+  max-width: 480px;
+  padding: 40px;
+}
+.placeholder {
+  text-align: center;
+  color: #7a716b;
+  font-size: 14px;
+  margin-top: 20px;
+}
+.footerWrap {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
