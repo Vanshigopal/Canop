@@ -1,0 +1,130 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ════════════════════════════════════════════════════════
+// ENUMS
+// ════════════════════════════════════════════════════════
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STAFF
+  PARENT
+  STUDENT
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+}
+
+enum TenantTier {
+  BASIC
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+// ════════════════════════════════════════════════════════
+// CORE PLATFORM — not tenant-scoped (global tables)
+// ════════════════════════════════════════════════════════
+
+model Tenant {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug         String       @unique @db.VarChar(30)
+  name         String       @db.VarChar(200)
+  status       TenantStatus @default(TRIAL)
+  tier         TenantTier   @default(BASIC)
+  logoUrl      String?      @map("logo_url")
+  primaryColor String?      @map("primary_color") @db.VarChar(7)
+  tagline      String?      @db.VarChar(300)
+  timezone     String       @default("Asia/Kolkata") @db.VarChar(50)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  deletedAt    DateTime?    @map("deleted_at")
+
+  // Relations
+  users     User[]
+  auditLogs AuditLog[]
+
+  @@map("tenants")
+}
+
+// ════════════════════════════════════════════════════════
+// TENANT-SCOPED TABLES — all have tenant_id + RLS
+// ════════════════════════════════════════════════════════
+
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  email        String    @db.VarChar(255)
+  passwordHash String    @map("password_hash")
+  name         String    @db.VarChar(200)
+  role         UserRole  @default(ADMIN)
+  phone        String?   @db.VarChar(15)
+  avatarUrl    String?   @map("avatar_url")
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  // Relations
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions  Session[]
+  auditLogs AuditLog[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  refreshToken String   @unique @map("refresh_token")
+  userAgent    String?  @map("user_agent") @db.VarChar(500)
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([refreshToken])
+  @@map("sessions")
+}
+
+model AuditLog {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  action    String   @db.VarChar(100)
+  entity    String   @db.VarChar(100)
+  entityId  String?  @map("entity_id") @db.Uuid
+  before    Json?
+  after     Json?
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations (no soft-delete on audit logs — they're permanent)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, entity])
+  @@index([tenantId, userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -11,6 +11,8 @@
     "clean": "rimraf dist .turbo"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@raquel/db": "workspace:*",
     "@raquel/types": "workspace:*",
     "cors": "^2.8.5",
     "express": "^4.21.1",

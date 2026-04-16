@@ -2,8 +2,10 @@ import { BrandMark } from "@/components/brand/BrandMark";
 import { PoweredByRaquel } from "@/components/brand/PoweredByRaquel";
 import { AuroraBackground } from "@/components/layout/AuroraBackground";
 import { Button, Input } from "@/components/primitives";
+import { api } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type LoginRequest, LoginRequestSchema } from "@raquel/types";
+import axios from "axios";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import s from "./login.module.css";
@@ -21,10 +23,25 @@ export function LoginPage() {
 
   async function onSubmit(data: LoginRequest) {
     setSubmitting(true);
-    // Session 1: just log. Session 3 wires real auth.
-    console.log("[login] submit", data);
-    await new Promise((r) => setTimeout(r, 700));
-    setSubmitting(false);
+    try {
+      const response = await api.post("/api/v1/auth/login", data);
+      console.log("[login] success:", response.data);
+      // Session 3: store tokens, redirect to dashboard
+      alert(
+        `Login successful! Welcome, ${response.data.data.user.name}.\n\n(Session 3 will add proper redirect to dashboard)`,
+      );
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const errorData = err.response.data;
+        console.error("[login] error:", errorData);
+        alert(errorData.title || errorData.message || "Login failed");
+      } else {
+        console.error("[login] error:", err);
+        alert("Connection error — is the API running?");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (

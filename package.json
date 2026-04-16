@@ -14,7 +14,12 @@
     "clean": "turbo clean && rimraf node_modules",
     "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker/docker-compose.yml down",
-    "db:reset": "docker compose -f infra/docker/docker-compose.yml down -v && pnpm db:up"
+    "db:reset": "docker compose -f infra/docker/docker-compose.yml down -v && pnpm db:up",
+    "db:generate": "pnpm --filter @raquel/db db:generate",
+    "db:migrate": "pnpm --filter @raquel/db db:migrate",
+    "db:seed": "pnpm --filter @raquel/db db:seed",
+    "db:studio": "pnpm --filter @raquel/db db:studio",
+    "db:push": "pnpm --filter @raquel/db db:push"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
