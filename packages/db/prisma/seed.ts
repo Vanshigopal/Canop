@@ -522,6 +522,143 @@ async function main() {
   });
   console.log("[seed] 3 attendance sessions with records (incl. cross-batch guest entry)");
 
+  // ── Fee Categories ──
+  const feeCategories = await Promise.all(
+    [
+      { name: "Tuition Fee", description: "Core academic instruction fee" },
+      { name: "Lab Fee", description: "Laboratory materials and equipment" },
+      { name: "Library", description: "Library access and resources" },
+      { name: "Study Material", description: "Books, printed notes, assignments" },
+    ].map((c) =>
+      prisma.feeCategory.upsert({
+        where: { tenantId_name: { tenantId: demoTenant.id, name: c.name } },
+        update: {},
+        create: { tenantId: demoTenant.id, ...c },
+      }),
+    ),
+  );
+  console.log(`[seed] Fee categories: ${feeCategories.map((c) => c.name).join(", ")}`);
+
+  // ── Fee Plan for NEET-2026 ──
+  // Total ₹75,000 — 4 quarterly installments of ₹18,750 each
+  const feePlan = await prisma.feePlan.upsert({
+    where: {
+      tenantId_batchId_academicYear: {
+        tenantId: demoTenant.id,
+        batchId: batchNeet.id,
+        academicYear: "2025-2026",
+      },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      batchId: batchNeet.id,
+      name: "NEET-2026 Annual Fee",
+      academicYear: "2025-2026",
+      totalAmount: 75000,
+      installmentCount: 4,
+      installmentFrequency: "QUARTERLY",
+      dueDay: 1,
+      lateFeeAmount: 500,
+      gracePeriodDays: 7,
+    },
+  });
+  console.log(`[seed] Fee plan: ${feePlan.name} — ₹${feePlan.totalAmount}`);
+
+  // ── Fee Plan Items ──
+  const planItems: Array<{ name: string; amount: number }> = [
+    { name: "Tuition Fee", amount: 60000 },
+    { name: "Lab Fee", amount: 8000 },
+    { name: "Library", amount: 3000 },
+    { name: "Study Material", amount: 4000 },
+  ];
+  for (const pi of planItems) {
+    const cat = feeCategories.find((c) => c.name === pi.name)!;
+    await prisma.feePlanItem.upsert({
+      where: { planId_categoryId: { planId: feePlan.id, categoryId: cat.id } },
+      update: {},
+      create: { planId: feePlan.id, categoryId: cat.id, amount: pi.amount },
+    });
+  }
+
+  // ── StudentFee for Sneha (enrolled in NEET-2026) ──
+  const totalAmt = 75000;
+  const studentFee = await prisma.studentFee.upsert({
+    where: {
+      tenantId_studentId_planId: {
+        tenantId: demoTenant.id,
+        studentId: snehaStudent.id,
+        planId: feePlan.id,
+      },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      studentId: snehaStudent.id,
+      planId: feePlan.id,
+      totalAmount: totalAmt,
+      discountAmount: 0,
+      paidAmount: 18750,
+      pendingAmount: 56250,
+      status: "PARTIALLY_PAID",
+    },
+  });
+
+  // ── Installments: 4 quarterly, ₹18,750 each ──
+  // Q1 due Apr 1 2026 (paid), Q2 Jul 1, Q3 Oct 1, Q4 Jan 1 2027
+  const per = 18750;
+  const installmentSchedule = [
+    { n: 1, date: new Date(Date.UTC(2026, 3, 1)), status: "PAID" as const, paidAmount: per },
+    { n: 2, date: new Date(Date.UTC(2026, 6, 1)), status: "UPCOMING" as const, paidAmount: 0 },
+    { n: 3, date: new Date(Date.UTC(2026, 9, 1)), status: "UPCOMING" as const, paidAmount: 0 },
+    { n: 4, date: new Date(Date.UTC(2027, 0, 1)), status: "UPCOMING" as const, paidAmount: 0 },
+  ];
+  const createdInstallments: Array<{ id: string; n: number }> = [];
+  for (const ins of installmentSchedule) {
+    const row = await prisma.installment.upsert({
+      where: {
+        studentFeeId_installmentNumber: {
+          studentFeeId: studentFee.id,
+          installmentNumber: ins.n,
+        },
+      },
+      update: {},
+      create: {
+        tenantId: demoTenant.id,
+        studentFeeId: studentFee.id,
+        installmentNumber: ins.n,
+        amount: per,
+        dueDate: ins.date,
+        paidAmount: ins.paidAmount,
+        status: ins.status,
+        paidAt: ins.status === "PAID" ? new Date(ins.date.getTime() + 86400000) : null,
+      },
+    });
+    createdInstallments.push({ id: row.id, n: ins.n });
+  }
+
+  // ── Payment for Q1 (cash, paid via admin) ──
+  const q1Id = createdInstallments.find((i) => i.n === 1)!.id;
+  await prisma.payment.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000100" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000100",
+      tenantId: demoTenant.id,
+      studentFeeId: studentFee.id,
+      installmentId: q1Id,
+      amount: per,
+      method: "CASH",
+      status: "SUCCESS",
+      receiptNumber: "RCT-DEMO-20260402-001",
+      transactionRef: "Cash receipt #001",
+      collectedById: demoAdmin.id,
+      note: "Q1 installment — paid in cash at office",
+      paidAt: new Date(Date.UTC(2026, 3, 2, 10, 30, 0)),
+    },
+  });
+  console.log("[seed] Fee plan + 4 installments + 1 cash payment for Sneha");
+
   console.log("[seed] Done.");
 }
 

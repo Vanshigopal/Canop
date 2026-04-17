@@ -10,6 +10,8 @@ const EnvSchema = z.object({
   JWT_ACCESS_TTL: z.coerce.number().default(900),
   JWT_REFRESH_TTL: z.coerce.number().default(604800),
   OTP_TTL: z.coerce.number().default(300),
+  RAZORPAY_KEY_ID: z.string().default("rzp_test_placeholder"),
+  RAZORPAY_KEY_SECRET: z.string().default("placeholder_secret"),
 });
 
 export const env = EnvSchema.parse(process.env);

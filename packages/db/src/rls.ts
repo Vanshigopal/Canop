@@ -18,6 +18,11 @@ export async function enableRLS(prisma: PrismaClient): Promise<void> {
     "attendance_sessions",
     "attendance_records",
     "student_batches",
+    "fee_categories",
+    "fee_plans",
+    "student_fees",
+    "installments",
+    "payments",
   ];
 
   for (const table of tenantScopedTables) {
@@ -37,5 +42,33 @@ export async function enableRLS(prisma: PrismaClient): Promise<void> {
     `);
   }
 
-  console.log(`[rls] Enabled RLS on ${tenantScopedTables.length} tables`);
+  // fee_plan_items has no tenant_id column — isolate via parent fee_plan
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "fee_plan_items" ENABLE ROW LEVEL SECURITY;`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "fee_plan_items" FORCE ROW LEVEL SECURITY;`,
+  );
+  await prisma.$executeRawUnsafe(
+    `DROP POLICY IF EXISTS tenant_isolation ON "fee_plan_items";`,
+  );
+  await prisma.$executeRawUnsafe(`
+    CREATE POLICY tenant_isolation ON "fee_plan_items"
+      USING (
+        EXISTS (
+          SELECT 1 FROM "fee_plans" fp
+          WHERE fp.id = "fee_plan_items".plan_id
+            AND fp.tenant_id = current_setting('app.current_tenant', true)::uuid
+        )
+      )
+      WITH CHECK (
+        EXISTS (
+          SELECT 1 FROM "fee_plans" fp
+          WHERE fp.id = "fee_plan_items".plan_id
+            AND fp.tenant_id = current_setting('app.current_tenant', true)::uuid
+        )
+      );
+  `);
+
+  console.log(`[rls] Enabled RLS on ${tenantScopedTables.length + 1} tables`);
 }

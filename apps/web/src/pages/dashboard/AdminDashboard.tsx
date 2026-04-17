@@ -4,6 +4,8 @@ import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth";
 import { useStatsStore } from "@/stores/stats";
 import {
+  ArrowDownRight,
+  ArrowUpRight,
   CheckSquare,
   ChevronRight,
   GraduationCap,
@@ -24,7 +26,8 @@ interface BatchOption {
 
 export function AdminDashboard() {
   const user = useAuthStore((s) => s.user);
-  const { studentCount, batchCount, teacherCount, todayAttendance, fetch } = useStatsStore();
+  const { studentCount, batchCount, teacherCount, todayAttendance, monthRevenue, fetch } =
+    useStatsStore();
   const [batches, setBatches] = useState<BatchOption[]>([]);
   const [filterBatchId, setFilterBatchId] = useState("");
   const [period, setPeriod] = useState<Period>("today");
@@ -40,6 +43,9 @@ export function AdminDashboard() {
   }, [fetch]);
 
   useSocket("stats:updated", () => {
+    fetch();
+  });
+  useSocket("payment:received", () => {
     fetch();
   });
 
@@ -68,6 +74,28 @@ export function AdminDashboard() {
     : studentCount;
   const todayPct = scopedTotals.pct !== null ? `${scopedTotals.pct}%` : "—";
 
+  const revenueValue = monthRevenue
+    ? `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(monthRevenue.collected)}`
+    : "—";
+  const revenueSub = monthRevenue ? (
+    <span
+      className={`inline-flex items-center gap-1 text-2xs ${
+        monthRevenue.trend === "up"
+          ? "text-success"
+          : monthRevenue.trend === "down"
+            ? "text-danger"
+            : "text-text-dim"
+      }`}
+    >
+      {monthRevenue.trend === "up" ? (
+        <ArrowUpRight size={11} />
+      ) : monthRevenue.trend === "down" ? (
+        <ArrowDownRight size={11} />
+      ) : null}
+      {monthRevenue.trendPercent.toFixed(1)}% vs last month
+    </span>
+  ) : null;
+
   const stats = [
     {
       label: "Active Students",
@@ -75,6 +103,7 @@ export function AdminDashboard() {
       icon: Users,
       bg: "#FECDD3",
       fg: "#EC4899",
+      sub: null,
     },
     {
       label: "Batches Running",
@@ -82,22 +111,32 @@ export function AdminDashboard() {
       icon: GraduationCap,
       bg: "#BAE6FD",
       fg: "#0284C7",
-    },
-    {
-      label: "Teachers",
-      value: <AnimatedNumber value={teacherCount} />,
-      icon: CheckSquare,
-      bg: "#BBF7D0",
-      fg: "#059669",
+      sub: null,
     },
     {
       label: "Today's Attendance",
       value: todayPct,
+      icon: CheckSquare,
+      bg: "#BBF7D0",
+      fg: "#059669",
+      sub: <span className="text-2xs text-text-dim">{teacherCount} teachers</span>,
+    },
+    {
+      label: "Revenue MTD",
+      value: revenueValue,
       icon: IndianRupee,
       bg: "#FEF3C7",
       fg: "#D97706",
+      sub: revenueSub,
     },
-  ];
+  ] as Array<{
+    label: string;
+    value: React.ReactNode;
+    icon: typeof Users;
+    bg: string;
+    fg: string;
+    sub: React.ReactNode;
+  }>;
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -165,6 +204,7 @@ export function AdminDashboard() {
               <div className="text-2xl font-semibold text-text-primary tracking-tight">
                 {stat.value}
               </div>
+              {stat.sub && <div className="mt-1">{stat.sub}</div>}
             </div>
           );
         })}
@@ -225,9 +265,9 @@ export function AdminDashboard() {
       <div className="glass-panel p-6 max-w-2xl">
         <h2 className="font-display text-lg mb-4">What&apos;s coming next</h2>
         <div className="space-y-3">
-          <Upcoming session={7} text="Exams, marks entry, OMR scanning, and gradebook" />
-          <Upcoming session={8} text="Fee management and payment gateway integration" />
-          <Upcoming session={9} text="Retest scheduling and exam workflows" />
+          <Upcoming session={8} text="SMS & WhatsApp reminders for fees + attendance" />
+          <Upcoming session={9} text="Exams, marks entry, OMR scanning, and gradebook" />
+          <Upcoming session={10} text="Retest scheduling and exam workflows" />
         </div>
       </div>
     </div>

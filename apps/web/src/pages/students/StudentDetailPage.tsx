@@ -110,7 +110,7 @@ export function StudentDetailPage() {
       {tab === "overview" && <StudentOverview student={student} />}
       {tab === "attendance" && <StudentAttendanceTab studentId={student.id} />}
       {tab === "academic" && <AcademicTab />}
-      {tab === "fees" && <FeesTab />}
+      {tab === "fees" && <FeesTab studentId={student.id} />}
     </div>
   );
 }

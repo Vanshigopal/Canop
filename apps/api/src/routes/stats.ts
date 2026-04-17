@@ -12,32 +12,72 @@ function todayUTC(): Date {
   return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
 }
 
+function startOfMonthUTC(d: Date = new Date()): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+function startOfPreviousMonthUTC(d: Date = new Date()): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, 1));
+}
+
 statsRouter.get("/overview", async (req, res) => {
   const tenantId = req.user!.tenantId;
   const today = todayUTC();
-  const [studentCount, teacherCount, batchCount, pendingJoinRequests, todaySessions] =
-    await Promise.all([
-      prisma.student.count({ where: { tenantId, deletedAt: null } }),
-      prisma.user.count({ where: { tenantId, role: "TEACHER", deletedAt: null } }),
-      prisma.batch.count({ where: { tenantId, deletedAt: null } }),
-      prisma.joinRequest.count({ where: { tenantId, status: "PENDING" } }),
-      prisma.attendanceSession.findMany({
-        where: { tenantId, date: today },
-        select: {
-          id: true,
-          type: true,
-          startTime: true,
-          endTime: true,
-          isFinalized: true,
-          totalPresent: true,
-          totalAbsent: true,
-          totalLate: true,
-          batch: { select: { id: true, name: true, _count: { select: { students: true } } } },
-          subject: { select: { id: true, name: true } },
-        },
-        orderBy: [{ startTime: "asc" }],
-      }),
-    ]);
+  const thisMonthStart = startOfMonthUTC();
+  const prevMonthStart = startOfPreviousMonthUTC();
+
+  const [
+    studentCount,
+    teacherCount,
+    batchCount,
+    pendingJoinRequests,
+    todaySessions,
+    thisMonthPayments,
+    prevMonthPayments,
+    pendingFeesAgg,
+    overdueInstalls,
+  ] = await Promise.all([
+    prisma.student.count({ where: { tenantId, deletedAt: null } }),
+    prisma.user.count({ where: { tenantId, role: "TEACHER", deletedAt: null } }),
+    prisma.batch.count({ where: { tenantId, deletedAt: null } }),
+    prisma.joinRequest.count({ where: { tenantId, status: "PENDING" } }),
+    prisma.attendanceSession.findMany({
+      where: { tenantId, date: today },
+      select: {
+        id: true,
+        type: true,
+        startTime: true,
+        endTime: true,
+        isFinalized: true,
+        totalPresent: true,
+        totalAbsent: true,
+        totalLate: true,
+        batch: { select: { id: true, name: true, _count: { select: { students: true } } } },
+        subject: { select: { id: true, name: true } },
+      },
+      orderBy: [{ startTime: "asc" }],
+    }),
+    prisma.payment.aggregate({
+      where: { tenantId, status: "SUCCESS", paidAt: { gte: thisMonthStart } },
+      _sum: { amount: true },
+    }),
+    prisma.payment.aggregate({
+      where: {
+        tenantId,
+        status: "SUCCESS",
+        paidAt: { gte: prevMonthStart, lt: thisMonthStart },
+      },
+      _sum: { amount: true },
+    }),
+    prisma.studentFee.aggregate({
+      where: { tenantId },
+      _sum: { pendingAmount: true },
+    }),
+    prisma.installment.findMany({
+      where: { tenantId, status: "OVERDUE" },
+      select: { amount: true, paidAmount: true, lateFee: true },
+    }),
+  ]);
 
   const overallPresent = todaySessions.reduce((sum, s) => sum + s.totalPresent + s.totalLate, 0);
   const overallTotal = todaySessions.reduce(
@@ -45,6 +85,22 @@ statsRouter.get("/overview", async (req, res) => {
     0,
   );
   const percentage = overallTotal > 0 ? Math.round((overallPresent / overallTotal) * 1000) / 10 : 0;
+
+  const thisMonth = Number(thisMonthPayments._sum.amount ?? 0);
+  const prevMonth = Number(prevMonthPayments._sum.amount ?? 0);
+  const trendPercent =
+    prevMonth > 0
+      ? Math.round(((thisMonth - prevMonth) / prevMonth) * 1000) / 10
+      : thisMonth > 0
+        ? 100
+        : 0;
+  const trend: "up" | "down" | "flat" =
+    thisMonth > prevMonth ? "up" : thisMonth < prevMonth ? "down" : "flat";
+
+  const totalOverdue = overdueInstalls.reduce(
+    (s, i) => s + (Number(i.amount) - Number(i.paidAmount) + Number(i.lateFee)),
+    0,
+  );
 
   return ok(res, {
     studentCount,
@@ -69,6 +125,12 @@ statsRouter.get("/overview", async (req, res) => {
         subject: s.subject,
       })),
     },
-    monthRevenue: null,
+    monthRevenue: {
+      collected: Math.round(thisMonth * 100) / 100,
+      pending: Math.round(Number(pendingFeesAgg._sum.pendingAmount ?? 0) * 100) / 100,
+      overdue: Math.round(totalOverdue * 100) / 100,
+      trend,
+      trendPercent: Math.abs(trendPercent),
+    },
   });
 });

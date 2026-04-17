@@ -8,3 +8,4 @@ export * from "./batch";
 export * from "./teacher";
 export * from "./enrollment";
 export * from "./attendance";
+export * from "./fees";

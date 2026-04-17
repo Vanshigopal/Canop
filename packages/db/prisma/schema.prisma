@@ -70,6 +70,57 @@ enum AttendanceMethod {
   BULK
 }
 
+enum InstallmentFrequency {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  ANNUALLY
+  CUSTOM
+}
+
+enum FeeStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  WAIVED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FLAT
+  SCHOLARSHIP
+  SIBLING
+  MERIT
+  CUSTOM
+}
+
+enum InstallmentStatus {
+  UPCOMING
+  DUE
+  OVERDUE
+  PAID
+  PARTIALLY_PAID
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+  NETBANKING
+  CHEQUE
+  RAZORPAY_ONLINE
+  BANK_TRANSFER
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
 // ════════════════════════════════════════════════════════
 // CORE PLATFORM — not tenant-scoped (global tables)
 // ════════════════════════════════════════════════════════
@@ -97,6 +148,9 @@ model Tenant {
   inviteLinks        InviteLink[]
   joinRequests       JoinRequest[]
   attendanceSessions AttendanceSession[]
+  feeCategories      FeeCategory[]
+  feePlans           FeePlan[]
+  studentFees        StudentFee[]
 
   @@map("tenants")
 }
@@ -132,6 +186,7 @@ model User {
   reviewedJoinRequests     JoinRequest[]    @relation("JoinRequestReviewer")
   markedAttendanceSessions AttendanceSession[] @relation("AttendanceMarker")
   markedAttendanceRecords  AttendanceRecord[]  @relation("AttendanceRecordMarker")
+  collectedPayments        Payment[]           @relation("PaymentCollector")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -268,6 +323,7 @@ model Batch {
   inviteLinks        InviteLink[]
   attendanceSessions AttendanceSession[]
   studentBatches     StudentBatch[]
+  feePlans           FeePlan[]
 
   @@unique([tenantId, name, academicYear])
   @@index([tenantId])
@@ -341,6 +397,7 @@ model Student {
   guardians          Guardian[]
   attendanceRecords  AttendanceRecord[]
   batches            StudentBatch[]
+  fees               StudentFee[]
 
   @@index([tenantId])
   @@index([tenantId, batchId])
@@ -523,4 +580,150 @@ model StudentBatch {
   @@index([tenantId])
   @@index([batchId])
   @@map("student_batches")
+}
+
+// ════════════════════════════════════════════════════════
+// FEE MANAGEMENT
+// ════════════════════════════════════════════════════════
+
+model FeeCategory {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  name        String    @db.VarChar(100)
+  description String?   @db.VarChar(300)
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planItems   FeePlanItem[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("fee_categories")
+}
+
+model FeePlan {
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String               @map("tenant_id") @db.Uuid
+  batchId              String               @map("batch_id") @db.Uuid
+  name                 String               @db.VarChar(200)
+  academicYear         String               @map("academic_year") @db.VarChar(9)
+  totalAmount          Decimal              @map("total_amount") @db.Decimal(10, 2)
+  installmentCount     Int                  @default(1) @map("installment_count")
+  installmentFrequency InstallmentFrequency @default(MONTHLY) @map("installment_frequency")
+  dueDay               Int                  @default(1) @map("due_day")
+  lateFeeAmount        Decimal?             @map("late_fee_amount") @db.Decimal(10, 2)
+  lateFeePercent       Decimal?             @map("late_fee_percent") @db.Decimal(5, 2)
+  gracePeriodDays      Int                  @default(7) @map("grace_period_days")
+  gstPercent           Decimal?             @map("gst_percent") @db.Decimal(5, 2)
+  isActive             Boolean              @default(true) @map("is_active")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+  deletedAt            DateTime?            @map("deleted_at")
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  batch       Batch         @relation(fields: [batchId], references: [id])
+  items       FeePlanItem[]
+  studentFees StudentFee[]
+
+  @@unique([tenantId, batchId, academicYear])
+  @@index([tenantId])
+  @@map("fee_plans")
+}
+
+model FeePlanItem {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  planId     String  @map("plan_id") @db.Uuid
+  categoryId String  @map("category_id") @db.Uuid
+  amount     Decimal @db.Decimal(10, 2)
+
+  plan     FeePlan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  category FeeCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([planId, categoryId])
+  @@map("fee_plan_items")
+}
+
+model StudentFee {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  studentId      String        @map("student_id") @db.Uuid
+  planId         String        @map("plan_id") @db.Uuid
+  totalAmount    Decimal       @map("total_amount") @db.Decimal(10, 2)
+  discountAmount Decimal       @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  discountReason String?       @map("discount_reason") @db.VarChar(300)
+  discountType   DiscountType? @map("discount_type")
+  paidAmount     Decimal       @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  pendingAmount  Decimal       @map("pending_amount") @db.Decimal(10, 2)
+  status         FeeStatus     @default(PENDING)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student      Student       @relation(fields: [studentId], references: [id])
+  plan         FeePlan       @relation(fields: [planId], references: [id])
+  installments Installment[]
+  payments     Payment[]
+
+  @@unique([tenantId, studentId, planId])
+  @@index([tenantId])
+  @@index([tenantId, studentId])
+  @@index([tenantId, status])
+  @@map("student_fees")
+}
+
+model Installment {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String            @map("tenant_id") @db.Uuid
+  studentFeeId      String            @map("student_fee_id") @db.Uuid
+  installmentNumber Int               @map("installment_number")
+  amount            Decimal           @db.Decimal(10, 2)
+  dueDate           DateTime          @map("due_date") @db.Date
+  paidAmount        Decimal           @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  lateFee           Decimal           @default(0) @map("late_fee") @db.Decimal(10, 2)
+  status            InstallmentStatus @default(UPCOMING)
+  paidAt            DateTime?         @map("paid_at")
+  reminderSentAt    DateTime?         @map("reminder_sent_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  studentFee StudentFee @relation(fields: [studentFeeId], references: [id], onDelete: Cascade)
+  payments   Payment[]
+
+  @@unique([studentFeeId, installmentNumber])
+  @@index([tenantId])
+  @@index([tenantId, dueDate])
+  @@index([tenantId, status])
+  @@map("installments")
+}
+
+model Payment {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String        @map("tenant_id") @db.Uuid
+  studentFeeId       String        @map("student_fee_id") @db.Uuid
+  installmentId      String?       @map("installment_id") @db.Uuid
+  amount             Decimal       @db.Decimal(10, 2)
+  method             PaymentMethod
+  status             PaymentStatus @default(PENDING)
+  razorpayOrderId    String?       @unique @map("razorpay_order_id") @db.VarChar(100)
+  razorpayPaymentId  String?       @unique @map("razorpay_payment_id") @db.VarChar(100)
+  razorpaySignature  String?       @map("razorpay_signature") @db.VarChar(200)
+  receiptNumber      String?       @map("receipt_number") @db.VarChar(50)
+  transactionRef     String?       @map("transaction_ref") @db.VarChar(100)
+  collectedById      String?       @map("collected_by_id") @db.Uuid
+  note               String?       @db.VarChar(500)
+  paidAt             DateTime?     @map("paid_at")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  studentFee  StudentFee   @relation(fields: [studentFeeId], references: [id])
+  installment Installment? @relation(fields: [installmentId], references: [id])
+  collectedBy User?        @relation("PaymentCollector", fields: [collectedById], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([razorpayOrderId])
+  @@map("payments")
 }

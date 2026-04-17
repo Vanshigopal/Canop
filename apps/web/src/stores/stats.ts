@@ -22,12 +22,21 @@ interface TodayAttendance {
   sessions: TodaySession[];
 }
 
+interface MonthRevenue {
+  collected: number;
+  pending: number;
+  overdue: number;
+  trend: "up" | "down" | "flat";
+  trendPercent: number;
+}
+
 interface StatsState {
   studentCount: number;
   teacherCount: number;
   batchCount: number;
   pendingJoinRequests: number;
   todayAttendance: TodayAttendance | null;
+  monthRevenue: MonthRevenue | null;
   loaded: boolean;
   fetch: () => Promise<void>;
 }
@@ -38,6 +47,7 @@ export const useStatsStore = create<StatsState>((set) => ({
   batchCount: 0,
   pendingJoinRequests: 0,
   todayAttendance: null,
+  monthRevenue: null,
   loaded: false,
   fetch: async () => {
     try {
@@ -49,6 +59,7 @@ export const useStatsStore = create<StatsState>((set) => ({
         batchCount: d.batchCount,
         pendingJoinRequests: d.pendingJoinRequests,
         todayAttendance: d.todayAttendance ?? null,
+        monthRevenue: d.monthRevenue ?? null,
         loaded: true,
       });
     } catch {
