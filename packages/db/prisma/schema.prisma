@@ -51,6 +51,25 @@ enum JoinRequestStatus {
   REJECTED
 }
 
+enum AttendanceType {
+  LECTURE
+  EXAM
+  RETEST
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum AttendanceMethod {
+  QR_SCAN
+  MANUAL
+  BULK
+}
+
 // ════════════════════════════════════════════════════════
 // CORE PLATFORM — not tenant-scoped (global tables)
 // ════════════════════════════════════════════════════════
@@ -69,14 +88,15 @@ model Tenant {
   updatedAt    DateTime     @updatedAt @map("updated_at")
   deletedAt    DateTime?    @map("deleted_at")
 
-  users        User[]
-  auditLogs    AuditLog[]
-  subjects     Subject[]
-  classes      ClassStandard[]
-  batches      Batch[]
-  students     Student[]
-  inviteLinks  InviteLink[]
-  joinRequests JoinRequest[]
+  users              User[]
+  auditLogs          AuditLog[]
+  subjects           Subject[]
+  classes            ClassStandard[]
+  batches            Batch[]
+  students           Student[]
+  inviteLinks        InviteLink[]
+  joinRequests       JoinRequest[]
+  attendanceSessions AttendanceSession[]
 
   @@map("tenants")
 }
@@ -100,16 +120,18 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  tenant               Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  sessions             Session[]
-  auditLogs            AuditLog[]
-  permissions          Permission?
-  student              Student?
-  guardianOf           Guardian[]
-  teacherSubjects      TeacherSubject[] @relation("TeacherSubjects")
-  batchSubjects        BatchSubject[]   @relation("TeacherBatchSubjects")
-  createdInvites       InviteLink[]     @relation("InviteCreator")
-  reviewedJoinRequests JoinRequest[]    @relation("JoinRequestReviewer")
+  tenant                   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions                 Session[]
+  auditLogs                AuditLog[]
+  permissions              Permission?
+  student                  Student?
+  guardianOf               Guardian[]
+  teacherSubjects          TeacherSubject[] @relation("TeacherSubjects")
+  batchSubjects            BatchSubject[]   @relation("TeacherBatchSubjects")
+  createdInvites           InviteLink[]     @relation("InviteCreator")
+  reviewedJoinRequests     JoinRequest[]    @relation("JoinRequestReviewer")
+  markedAttendanceSessions AttendanceSession[] @relation("AttendanceMarker")
+  markedAttendanceRecords  AttendanceRecord[]  @relation("AttendanceRecordMarker")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -195,9 +217,10 @@ model Subject {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  batchSubjects   BatchSubject[]
-  teacherSubjects TeacherSubject[]
+  tenant             Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  batchSubjects      BatchSubject[]
+  teacherSubjects    TeacherSubject[]
+  attendanceSessions AttendanceSession[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -238,11 +261,12 @@ model Batch {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  class         ClassStandard  @relation(fields: [classId], references: [id])
-  batchSubjects BatchSubject[]
-  students      Student[]
-  inviteLinks   InviteLink[]
+  tenant             Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  class              ClassStandard  @relation(fields: [classId], references: [id])
+  batchSubjects      BatchSubject[]
+  students           Student[]
+  inviteLinks        InviteLink[]
+  attendanceSessions AttendanceSession[]
 
   @@unique([tenantId, name, academicYear])
   @@index([tenantId])
@@ -309,11 +333,12 @@ model Student {
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
 
-  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  batch     Batch?         @relation(fields: [batchId], references: [id])
-  class     ClassStandard? @relation(fields: [classId], references: [id])
-  guardians Guardian[]
+  tenant             Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batch              Batch?         @relation(fields: [batchId], references: [id])
+  class              ClassStandard? @relation(fields: [classId], references: [id])
+  guardians          Guardian[]
+  attendanceRecords  AttendanceRecord[]
 
   @@index([tenantId])
   @@index([tenantId, batchId])
@@ -403,4 +428,79 @@ model JoinRequest {
   @@index([tenantId])
   @@index([tenantId, status])
   @@map("join_requests")
+}
+
+// ════════════════════════════════════════════════════════
+// ATTENDANCE
+// ════════════════════════════════════════════════════════
+
+model AttendanceSession {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String          @map("tenant_id") @db.Uuid
+  batchId       String          @map("batch_id") @db.Uuid
+  subjectId     String?         @map("subject_id") @db.Uuid
+  type          AttendanceType
+  date          DateTime        @db.Date
+  startTime     String?         @map("start_time") @db.VarChar(5)
+  endTime       String?         @map("end_time") @db.VarChar(5)
+  markedById    String          @map("marked_by_id") @db.Uuid
+  qrCode        String?         @unique @map("qr_code") @db.VarChar(64)
+  qrExpiresAt   DateTime?       @map("qr_expires_at")
+  examId        String?         @map("exam_id") @db.Uuid
+  retestId      String?         @map("retest_id") @db.Uuid
+  isFinalized   Boolean         @default(false) @map("is_finalized")
+  totalPresent  Int             @default(0) @map("total_present")
+  totalAbsent   Int             @default(0) @map("total_absent")
+  totalLate     Int             @default(0) @map("total_late")
+  note          String?         @db.VarChar(500)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  batch         Batch              @relation(fields: [batchId], references: [id])
+  subject       Subject?           @relation(fields: [subjectId], references: [id])
+  markedBy      User               @relation("AttendanceMarker", fields: [markedById], references: [id])
+  records       AttendanceRecord[]
+
+  @@unique([tenantId, batchId, type, date, startTime])
+  @@index([tenantId])
+  @@index([tenantId, batchId, date])
+  @@index([tenantId, date])
+  @@index([qrCode])
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String           @map("tenant_id") @db.Uuid
+  sessionId         String           @map("session_id") @db.Uuid
+  studentId         String           @map("student_id") @db.Uuid
+  status            AttendanceStatus @default(ABSENT)
+  method            AttendanceMethod @default(MANUAL)
+
+  homeBatchId       String           @map("home_batch_id") @db.Uuid
+  attendedBatchId   String           @map("attended_batch_id") @db.Uuid
+  isGuestInBatch    Boolean          @default(false) @map("is_guest_in_batch")
+
+  markedAt          DateTime         @default(now()) @map("marked_at")
+  markedById        String?          @map("marked_by_id") @db.Uuid
+  deviceInfo        String?          @map("device_info") @db.VarChar(500)
+  ipAddress         String?          @map("ip_address") @db.VarChar(45)
+  note              String?          @db.VarChar(300)
+  lateMinutes       Int?             @map("late_minutes")
+
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  session           AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student           Student           @relation(fields: [studentId], references: [id])
+  markedBy          User?             @relation("AttendanceRecordMarker", fields: [markedById], references: [id])
+
+  @@unique([sessionId, studentId])
+  @@index([tenantId])
+  @@index([tenantId, studentId])
+  @@index([tenantId, studentId, status])
+  @@index([sessionId])
+  @@index([homeBatchId])
+  @@map("attendance_records")
 }

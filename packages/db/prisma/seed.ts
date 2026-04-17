@@ -172,12 +172,17 @@ async function main() {
   console.log(`[seed] Classes: ${classes.map((c) => c.name).join(", ")}`);
 
   // ── Batches ──
+  const class11 = classes[0]!;
+  const classNeet = classes[2]!;
+  const bio = subjects[0]!;
+  const chem = subjects[1]!;
+
   const batch11A = await prisma.batch.upsert({
     where: { tenantId_name_academicYear: { tenantId: demoTenant.id, name: "11-A", academicYear: "2025-2026" } },
     update: {},
     create: {
       tenantId: demoTenant.id,
-      classId: classes[0].id,
+      classId: class11.id,
       name: "11-A",
       capacity: 60,
       academicYear: "2025-2026",
@@ -189,7 +194,7 @@ async function main() {
     update: {},
     create: {
       tenantId: demoTenant.id,
-      classId: classes[2].id,
+      classId: classNeet.id,
       name: "NEET-2026",
       capacity: 40,
       academicYear: "2025-2026",
@@ -214,7 +219,7 @@ async function main() {
   }
 
   // ── Teacher-Subject links ──
-  for (const subj of [subjects[0], subjects[1]]) {
+  for (const subj of [bio, chem]) {
     await prisma.teacherSubject.upsert({
       where: { teacherId_subjectId: { teacherId: demoTeacher.id, subjectId: subj.id } },
       update: {},
@@ -231,7 +236,7 @@ async function main() {
       tenantId: demoTenant.id,
       userId: demoStudent.id,
       batchId: batch11A.id,
-      classId: classes[0].id,
+      classId: class11.id,
       rollNumber: "11A-001",
       dateOfBirth: new Date("2009-05-15"),
       gender: "MALE",
@@ -265,7 +270,7 @@ async function main() {
       tenantId: demoTenant.id,
       code: "DEMO2026",
       batchId: batchNeet.id,
-      classId: classes[2].id,
+      classId: classNeet.id,
       createdById: demoAdmin.id,
       maxUses: 50,
     },
@@ -286,7 +291,7 @@ async function main() {
         city: "Ahmedabad",
         state: "Gujarat",
         pincode: "380015",
-        classId: classes[2].id,
+        classId: classNeet.id,
         batchId: batchNeet.id,
         guardians: [
           { name: "Rajesh Sharma", relation: "FATHER", phone: "+919900100002", isEmergency: true },
@@ -301,7 +306,7 @@ async function main() {
         gender: "MALE",
         city: "Surat",
         state: "Gujarat",
-        classId: classes[0].id,
+        classId: class11.id,
         batchId: batch11A.id,
         guardians: [
           { name: "Vikram Patel", relation: "FATHER", phone: "+919900200002", isEmergency: true },
@@ -310,6 +315,199 @@ async function main() {
     ],
   });
   console.log("[seed] 2 pending join requests created");
+
+  // ── Extra student for cross-batch attendance demo ──
+  const demoStudent2 = await prisma.user.upsert({
+    where: { tenantId_email: { tenantId: demoTenant.id, email: "student2@demo.raquel.app" } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      email: "student2@demo.raquel.app",
+      name: "Sneha Patel",
+      role: "STUDENT",
+      phone: "+919876543214",
+    },
+  });
+  await prisma.student.upsert({
+    where: { userId: demoStudent2.id },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      userId: demoStudent2.id,
+      batchId: batchNeet.id,
+      classId: classNeet.id,
+      rollNumber: "NEET-001",
+      dateOfBirth: new Date("2008-09-12"),
+      gender: "FEMALE",
+      city: "Ahmedabad",
+      state: "Gujarat",
+    },
+  });
+  console.log("[seed] Student Sneha Patel enrolled in NEET-2026");
+
+  const aaravStudent = (await prisma.student.findUnique({ where: { userId: demoStudent.id } }))!;
+  const snehaStudent = (await prisma.student.findUnique({ where: { userId: demoStudent2.id } }))!;
+
+  // ── Attendance Sessions (past 3 days for 11-A) ──
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const threeDaysAgo = new Date(today);
+  threeDaysAgo.setDate(today.getDate() - 3);
+  const twoDaysAgo = new Date(today);
+  twoDaysAgo.setDate(today.getDate() - 2);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  // Session 1: 11-A LECTURE, 3 days ago, 09:00-10:00 (Biology)
+  const attSession1 = await prisma.attendanceSession.upsert({
+    where: {
+      tenantId_batchId_type_date_startTime: {
+        tenantId: demoTenant.id,
+        batchId: batch11A.id,
+        type: "LECTURE",
+        date: threeDaysAgo,
+        startTime: "09:00",
+      },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      batchId: batch11A.id,
+      subjectId: bio.id,
+      type: "LECTURE",
+      date: threeDaysAgo,
+      startTime: "09:00",
+      endTime: "10:00",
+      markedById: demoTeacher.id,
+      isFinalized: true,
+      totalPresent: 1,
+      totalAbsent: 0,
+      totalLate: 0,
+      note: "Chapter 5 — Cell Biology",
+    },
+  });
+  await prisma.attendanceRecord.upsert({
+    where: { sessionId_studentId: { sessionId: attSession1.id, studentId: aaravStudent.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      sessionId: attSession1.id,
+      studentId: aaravStudent.id,
+      status: "PRESENT",
+      method: "MANUAL",
+      homeBatchId: batch11A.id,
+      attendedBatchId: batch11A.id,
+      isGuestInBatch: false,
+      markedById: demoTeacher.id,
+    },
+  });
+
+  // Session 2: 11-A LECTURE, 2 days ago, 09:00-10:00 (Chemistry) — Aarav LATE
+  const attSession2 = await prisma.attendanceSession.upsert({
+    where: {
+      tenantId_batchId_type_date_startTime: {
+        tenantId: demoTenant.id,
+        batchId: batch11A.id,
+        type: "LECTURE",
+        date: twoDaysAgo,
+        startTime: "09:00",
+      },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      batchId: batch11A.id,
+      subjectId: chem.id,
+      type: "LECTURE",
+      date: twoDaysAgo,
+      startTime: "09:00",
+      endTime: "10:00",
+      markedById: demoTeacher.id,
+      isFinalized: true,
+      totalPresent: 0,
+      totalAbsent: 0,
+      totalLate: 1,
+      note: "Chapter 3 — Chemical Bonding",
+    },
+  });
+  await prisma.attendanceRecord.upsert({
+    where: { sessionId_studentId: { sessionId: attSession2.id, studentId: aaravStudent.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      sessionId: attSession2.id,
+      studentId: aaravStudent.id,
+      status: "LATE",
+      method: "MANUAL",
+      homeBatchId: batch11A.id,
+      attendedBatchId: batch11A.id,
+      isGuestInBatch: false,
+      markedById: demoTeacher.id,
+      lateMinutes: 12,
+      note: "Traffic delay",
+    },
+  });
+
+  // Session 3: NEET-2026 LECTURE, yesterday, 11:00-12:30 — Aarav attends as GUEST
+  const attSession3 = await prisma.attendanceSession.upsert({
+    where: {
+      tenantId_batchId_type_date_startTime: {
+        tenantId: demoTenant.id,
+        batchId: batchNeet.id,
+        type: "LECTURE",
+        date: yesterday,
+        startTime: "11:00",
+      },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      batchId: batchNeet.id,
+      subjectId: bio.id,
+      type: "LECTURE",
+      date: yesterday,
+      startTime: "11:00",
+      endTime: "12:30",
+      markedById: demoAdmin.id,
+      isFinalized: true,
+      totalPresent: 2,
+      totalAbsent: 0,
+      totalLate: 0,
+      note: "Revision — Human Physiology",
+    },
+  });
+  await prisma.attendanceRecord.upsert({
+    where: { sessionId_studentId: { sessionId: attSession3.id, studentId: snehaStudent.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      sessionId: attSession3.id,
+      studentId: snehaStudent.id,
+      status: "PRESENT",
+      method: "MANUAL",
+      homeBatchId: batchNeet.id,
+      attendedBatchId: batchNeet.id,
+      isGuestInBatch: false,
+      markedById: demoAdmin.id,
+    },
+  });
+  await prisma.attendanceRecord.upsert({
+    where: { sessionId_studentId: { sessionId: attSession3.id, studentId: aaravStudent.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      sessionId: attSession3.id,
+      studentId: aaravStudent.id,
+      status: "PRESENT",
+      method: "MANUAL",
+      homeBatchId: batch11A.id,
+      attendedBatchId: batchNeet.id,
+      isGuestInBatch: true,
+      markedById: demoAdmin.id,
+      note: "Guest from 11-A — Revision class",
+    },
+  });
+  console.log("[seed] 3 attendance sessions with records (incl. cross-batch guest entry)");
 
   console.log("[seed] Done.");
 }

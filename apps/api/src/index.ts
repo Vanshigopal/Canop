@@ -6,6 +6,7 @@ import { corsMiddleware } from "@/middleware/cors";
 import { errorMiddleware } from "@/middleware/error";
 import { loggerMiddleware } from "@/middleware/logger";
 import { tenantMiddleware } from "@/middleware/tenant";
+import { attendanceRouter } from "@/routes/attendance";
 import { authRouter } from "@/routes/auth";
 import { batchesRouter } from "@/routes/batches";
 import { classesRouter } from "@/routes/classes";
@@ -39,6 +40,7 @@ app.use("/api/v1/students", studentsRouter);
 app.use("/api/v1/invites", invitesRouter);
 app.use("/api/v1/enroll", enrollmentRouter);
 app.use("/api/v1/join-requests", joinRequestsRouter);
+app.use("/api/v1/attendance", attendanceRouter);
 app.use("/api/v1/stats", statsRouter);
 
 app.use(errorMiddleware);

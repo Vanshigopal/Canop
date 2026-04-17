@@ -8,6 +8,8 @@ import { DashboardRouter } from "@/pages/dashboard/DashboardRouter";
 import { StudentPortal } from "@/pages/portal/StudentPortal";
 import { ParentPortal } from "@/pages/parent/ParentPortal";
 import { StudentsPage } from "@/pages/students/StudentsPage";
+import { StudentDetailPage } from "@/pages/students/StudentDetailPage";
+import { AttendanceScanPage } from "@/pages/attendance/AttendanceScanPage";
 import { TeachersPage } from "@/pages/teachers/TeachersPage";
 import { BatchesPage } from "@/pages/batches/BatchesPage";
 import { AttendancePage } from "@/pages/attendance/AttendancePage";
@@ -33,6 +35,7 @@ export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/signup", element: <SignupPage /> },
   { path: "/enroll/:code", element: <EnrollPage /> },
+  { path: "/attendance/scan/:code", element: <AttendanceScanPage /> },
   {
     path: "/",
     element: (
@@ -46,6 +49,7 @@ export const router = createBrowserRouter([
 
       // Admin / Staff modules
       { path: "students", element: <RoleGuard roles={["ADMIN", "TEACHER", "STAFF"]}><StudentsPage /></RoleGuard> },
+      { path: "students/:id", element: <RoleGuard roles={["ADMIN", "TEACHER", "STAFF"]}><StudentDetailPage /></RoleGuard> },
       { path: "teachers", element: <RoleGuard roles={["ADMIN", "STAFF"]}><TeachersPage /></RoleGuard> },
       { path: "batches", element: <RoleGuard roles={["ADMIN", "TEACHER", "STAFF"]}><BatchesPage /></RoleGuard> },
       { path: "attendance", element: <RoleGuard roles={["ADMIN", "TEACHER", "STAFF"]}><AttendancePage /></RoleGuard> },

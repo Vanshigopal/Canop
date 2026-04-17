@@ -7,3 +7,4 @@ export * from "./class";
 export * from "./batch";
 export * from "./teacher";
 export * from "./enrollment";
+export * from "./attendance";

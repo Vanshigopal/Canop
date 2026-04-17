@@ -15,6 +15,8 @@ export async function enableRLS(prisma: PrismaClient): Promise<void> {
     "guardians",
     "invite_links",
     "join_requests",
+    "attendance_sessions",
+    "attendance_records",
   ];
 
   for (const table of tenantScopedTables) {

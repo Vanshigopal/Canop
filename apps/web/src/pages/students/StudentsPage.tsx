@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Input, Badge } from "@/components/primitives";
 import { Search } from "lucide-react";
@@ -81,7 +82,11 @@ export function StudentsPage() {
             <tbody>
               {students.map((s) => (
                 <tr key={s.id} className="border-b border-border-soft last:border-0 hover:bg-white/40 transition-colors">
-                  <td className="px-4 py-3 font-medium text-text-primary">{s.user.name}</td>
+                  <td className="px-4 py-3 font-medium text-text-primary">
+                    <Link to={`/students/${s.id}`} className="hover:text-indigo transition-colors">
+                      {s.user.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-text-muted font-mono text-xs">{s.user.phone}</td>
                   <td className="px-4 py-3 text-text-muted">{s.class?.name || "—"}</td>
                   <td className="px-4 py-3 text-text-muted">{s.batch?.name || "—"}</td>
