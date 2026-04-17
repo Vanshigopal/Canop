@@ -65,7 +65,7 @@ model User {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId     String    @map("tenant_id") @db.Uuid
   email        String    @db.VarChar(255)
-  passwordHash String    @map("password_hash")
+  passwordHash String?   @map("password_hash")
   name         String    @db.VarChar(200)
   role         UserRole  @default(ADMIN)
   phone        String?   @db.VarChar(15)
@@ -77,13 +77,15 @@ model User {
   deletedAt    DateTime? @map("deleted_at")
 
   // Relations
-  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  sessions  Session[]
-  auditLogs AuditLog[]
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions    Session[]
+  auditLogs   AuditLog[]
+  permissions Permission?
 
   @@unique([tenantId, email])
   @@index([tenantId])
   @@index([tenantId, role])
+  @@index([tenantId, phone])
   @@map("users")
 }
 
@@ -127,4 +129,26 @@ model AuditLog {
   @@index([tenantId, userId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model Permission {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String   @map("tenant_id") @db.Uuid
+  userId               String   @unique @map("user_id") @db.Uuid
+  canManageFees        Boolean  @default(false) @map("can_manage_fees")
+  canApproveAdmissions Boolean  @default(false) @map("can_approve_admissions")
+  canManageExams       Boolean  @default(false) @map("can_manage_exams")
+  canManageAttendance  Boolean  @default(false) @map("can_manage_attendance")
+  canManageTimetable   Boolean  @default(false) @map("can_manage_timetable")
+  canSendBroadcasts    Boolean  @default(false) @map("can_send_broadcasts")
+  canViewAnalytics     Boolean  @default(false) @map("can_view_analytics")
+  canManageContent     Boolean  @default(false) @map("can_manage_content")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@map("permissions")
 }

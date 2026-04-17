@@ -1,5 +1,7 @@
+import "express-async-errors";
 import express from "express";
 import { env } from "@/config/env";
+import { redis } from "@/config/redis";
 import { corsMiddleware } from "@/middleware/cors";
 import { errorMiddleware } from "@/middleware/error";
 import { loggerMiddleware } from "@/middleware/logger";
@@ -28,9 +30,21 @@ app.use("/api/v1/auth", authRouter);
 // Error handler (must be last)
 app.use(errorMiddleware);
 
-const server = app.listen(env.PORT, () => {
-  console.log(`[raquel-api] listening on http://localhost:${env.PORT}`);
-});
+async function start() {
+  await redis.connect();
+  const server = app.listen(env.PORT, () => {
+    console.log(`[raquel-api] listening on http://localhost:${env.PORT}`);
+  });
 
-process.on("SIGTERM", () => server.close(() => process.exit(0)));
-process.on("SIGINT", () => server.close(() => process.exit(0)));
+  const shutdown = () => {
+    redis.disconnect();
+    server.close(() => process.exit(0));
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+}
+
+start().catch((err) => {
+  console.error("[raquel-api] failed to start:", err);
+  process.exit(1);
+});

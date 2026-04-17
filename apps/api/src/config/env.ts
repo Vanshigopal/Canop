@@ -5,6 +5,11 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().default(3001),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   DATABASE_URL: z.string().url().default("postgresql://raquel:raquel_dev_password@localhost:5432/raquel_dev?schema=public"),
+  REDIS_URL: z.string().default("redis://localhost:6379"),
+  JWT_SECRET: z.string().min(16).default("raquel-dev-secret-change-in-production-please"),
+  JWT_ACCESS_TTL: z.coerce.number().default(900),
+  JWT_REFRESH_TTL: z.coerce.number().default(604800),
+  OTP_TTL: z.coerce.number().default(300),
 });
 
 export const env = EnvSchema.parse(process.env);

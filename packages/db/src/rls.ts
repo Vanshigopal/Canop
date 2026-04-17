@@ -13,7 +13,7 @@ import { PrismaClient } from "@prisma/client";
  * The Tenant table itself does NOT get RLS (it's a global lookup table).
  */
 export async function enableRLS(prisma: PrismaClient): Promise<void> {
-  const tenantScopedTables = ["users", "sessions", "audit_logs"];
+  const tenantScopedTables = ["users", "sessions", "audit_logs", "permissions"];
 
   for (const table of tenantScopedTables) {
     await prisma.$executeRawUnsafe(

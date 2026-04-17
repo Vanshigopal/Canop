@@ -40,6 +40,8 @@ export const Errors = {
     new AppError(422, "VALIDATION_FAILED", "Invalid request data", details),
   unauthorized: (msg = "Authentication required") =>
     new AppError(401, "UNAUTHORIZED", msg),
+  badRequest: (msg: string, code = "BAD_REQUEST") =>
+    new AppError(400, code, msg),
   forbidden: (msg = "You don't have permission for this action") =>
     new AppError(403, "FORBIDDEN", msg),
   notFound: (entity: string) =>

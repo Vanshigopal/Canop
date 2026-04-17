@@ -1,15 +1,11 @@
-import { hash } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
+import { hashSync } from "bcryptjs";
 import { enableRLS } from "../src/rls";
 
 const prisma = new PrismaClient();
 
-/**
- * Simple password hashing for dev seeds.
- * Session 3 replaces this with bcrypt/argon2.
- */
 function hashPassword(pw: string): string {
-  return hash("sha256", pw, "hex");
+  return hashSync(pw, 12);
 }
 
 async function main() {
@@ -47,9 +43,8 @@ async function main() {
   });
   console.log(`[seed] Tenant: ${testTenant.slug} (${testTenant.id})`);
 
-  // 3. Create admin users (one per tenant)
-  // RLS is enabled but we're the DB owner, so we can write directly
-  await prisma.user.upsert({
+  // 3. Create users
+  const demoAdmin = await prisma.user.upsert({
     where: {
       tenantId_email: {
         tenantId: demoTenant.id,
@@ -86,41 +81,83 @@ async function main() {
   });
   console.log("[seed] User: admin@test.raquel.app / password123");
 
-  // 4. Create a few additional users in demo tenant for testing
-  const roles: Array<{
-    email: string;
-    name: string;
-    role: "TEACHER" | "PARENT" | "STUDENT";
-  }> = [
-    {
+  const demoTeacher = await prisma.user.upsert({
+    where: {
+      tenantId_email: { tenantId: demoTenant.id, email: "teacher@demo.raquel.app" },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
       email: "teacher@demo.raquel.app",
+      passwordHash: hashPassword("password123"),
       name: "Demo Teacher",
       role: "TEACHER",
+      phone: "+919876543211",
     },
-    { email: "parent@demo.raquel.app", name: "Demo Parent", role: "PARENT" },
-    {
+  });
+  console.log("[seed] User: teacher@demo.raquel.app (TEACHER)");
+
+  await prisma.user.upsert({
+    where: {
+      tenantId_email: { tenantId: demoTenant.id, email: "parent@demo.raquel.app" },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      email: "parent@demo.raquel.app",
+      name: "Demo Parent",
+      role: "PARENT",
+      phone: "+919876543212",
+    },
+  });
+  console.log("[seed] User: parent@demo.raquel.app (PARENT, phone: +919876543212)");
+
+  await prisma.user.upsert({
+    where: {
+      tenantId_email: { tenantId: demoTenant.id, email: "student@demo.raquel.app" },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
       email: "student@demo.raquel.app",
       name: "Demo Student",
       role: "STUDENT",
+      phone: "+919876543213",
     },
-  ];
+  });
+  console.log("[seed] User: student@demo.raquel.app (STUDENT, phone: +919876543213)");
 
-  for (const u of roles) {
-    await prisma.user.upsert({
-      where: {
-        tenantId_email: { tenantId: demoTenant.id, email: u.email },
-      },
-      update: {},
-      create: {
-        tenantId: demoTenant.id,
-        email: u.email,
-        passwordHash: hashPassword("password123"),
-        name: u.name,
-        role: u.role,
-      },
-    });
-    console.log(`[seed] User: ${u.email} (${u.role})`);
-  }
+  // 4. Create permissions
+  await prisma.permission.upsert({
+    where: { tenantId_userId: { tenantId: demoTenant.id, userId: demoAdmin.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      userId: demoAdmin.id,
+      canManageFees: true,
+      canApproveAdmissions: true,
+      canManageExams: true,
+      canManageAttendance: true,
+      canManageTimetable: true,
+      canSendBroadcasts: true,
+      canViewAnalytics: true,
+      canManageContent: true,
+    },
+  });
+  console.log("[seed] Permission: admin → all flags true");
+
+  await prisma.permission.upsert({
+    where: { tenantId_userId: { tenantId: demoTenant.id, userId: demoTeacher.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      userId: demoTeacher.id,
+      canManageAttendance: true,
+      canManageExams: true,
+      canManageContent: true,
+    },
+  });
+  console.log("[seed] Permission: teacher → attendance, exams, content");
 
   console.log("[seed] Done.");
 }

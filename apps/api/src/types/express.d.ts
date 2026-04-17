@@ -12,5 +12,10 @@ declare namespace Express {
       timezone: string;
     };
     tenantId?: string;
+    user?: {
+      id: string;
+      tenantId: string;
+      role: string;
+    };
   }
 }
