@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma, withTenantTransaction } from "@/config/db";
+import { emitToTenant } from "@/config/socket";
 import { Errors } from "@/lib/errors";
 import { ok, paginated } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
@@ -149,6 +150,8 @@ joinRequestsRouter.post("/:id/approve", async (req, res) => {
     });
   });
 
+  emitToTenant(tenantId, "joinRequest:updated", { id: jr.id, status: "APPROVED" });
+  emitToTenant(tenantId, "stats:updated", {});
   return ok(res, result);
 });
 
@@ -160,7 +163,8 @@ joinRequestsRouter.post("/:id/reject", async (req, res) => {
   if (!jr) throw Errors.notFound("Join request");
   if (jr.status !== "PENDING") throw Errors.badRequest("This request has already been processed");
 
-  const updated = await withTenantTransaction(prisma, req.user!.tenantId, (tx) =>
+  const tenantId = req.user!.tenantId;
+  const updated = await withTenantTransaction(prisma, tenantId, (tx) =>
     tx.joinRequest.update({
       where: { id: jr.id },
       data: {
@@ -171,5 +175,7 @@ joinRequestsRouter.post("/:id/reject", async (req, res) => {
       },
     }),
   );
+  emitToTenant(tenantId, "joinRequest:updated", { id: jr.id, status: "REJECTED" });
+  emitToTenant(tenantId, "stats:updated", {});
   return ok(res, updated);
 });

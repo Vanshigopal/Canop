@@ -348,6 +348,19 @@ async function main() {
   const aaravStudent = (await prisma.student.findUnique({ where: { userId: demoStudent.id } }))!;
   const snehaStudent = (await prisma.student.findUnique({ where: { userId: demoStudent2.id } }))!;
 
+  // ── StudentBatch links (multi-batch support) ──
+  for (const { studentId, batchId, isPrimary } of [
+    { studentId: aaravStudent.id, batchId: batch11A.id, isPrimary: true },
+    { studentId: snehaStudent.id, batchId: batchNeet.id, isPrimary: true },
+  ]) {
+    await prisma.studentBatch.upsert({
+      where: { studentId_batchId: { studentId, batchId } },
+      update: {},
+      create: { tenantId: demoTenant.id, studentId, batchId, isPrimary },
+    });
+  }
+  console.log("[seed] StudentBatch links created");
+
   // ── Attendance Sessions (past 3 days for 11-A) ──
   const today = new Date();
   today.setHours(0, 0, 0, 0);

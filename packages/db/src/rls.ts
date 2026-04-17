@@ -17,6 +17,7 @@ export async function enableRLS(prisma: PrismaClient): Promise<void> {
     "join_requests",
     "attendance_sessions",
     "attendance_records",
+    "student_batches",
   ];
 
   for (const table of tenantScopedTables) {

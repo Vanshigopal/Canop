@@ -543,8 +543,6 @@ export function AttendancePage() {
       {session && showQr && (
         <AttendanceQrModal
           sessionId={session.id}
-          initialCode={session.qrCode}
-          initialExpiresAt={session.qrExpiresAt}
           onClose={() => {
             setShowQr(false);
             loadSession();

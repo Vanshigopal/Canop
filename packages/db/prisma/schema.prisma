@@ -267,6 +267,7 @@ model Batch {
   students           Student[]
   inviteLinks        InviteLink[]
   attendanceSessions AttendanceSession[]
+  studentBatches     StudentBatch[]
 
   @@unique([tenantId, name, academicYear])
   @@index([tenantId])
@@ -339,6 +340,7 @@ model Student {
   class              ClassStandard? @relation(fields: [classId], references: [id])
   guardians          Guardian[]
   attendanceRecords  AttendanceRecord[]
+  batches            StudentBatch[]
 
   @@index([tenantId])
   @@index([tenantId, batchId])
@@ -503,4 +505,22 @@ model AttendanceRecord {
   @@index([sessionId])
   @@index([homeBatchId])
   @@map("attendance_records")
+}
+
+model StudentBatch {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  studentId  String    @map("student_id") @db.Uuid
+  batchId    String    @map("batch_id") @db.Uuid
+  isPrimary  Boolean   @default(false) @map("is_primary")
+  joinedAt   DateTime  @default(now()) @map("joined_at")
+  leftAt     DateTime? @map("left_at")
+
+  student    Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  batch      Batch     @relation(fields: [batchId], references: [id])
+
+  @@unique([studentId, batchId])
+  @@index([tenantId])
+  @@index([batchId])
+  @@map("student_batches")
 }

@@ -1,7 +1,10 @@
 import "express-async-errors";
+import { createServer } from "node:http";
+import compression from "compression";
 import express from "express";
 import { env } from "@/config/env";
 import { redis } from "@/config/redis";
+import { initializeSocket } from "@/config/socket";
 import { corsMiddleware } from "@/middleware/cors";
 import { errorMiddleware } from "@/middleware/error";
 import { loggerMiddleware } from "@/middleware/logger";
@@ -24,6 +27,7 @@ const app = express();
 
 app.use(loggerMiddleware);
 app.use(corsMiddleware);
+app.use(compression());
 app.use(express.json({ limit: "1mb" }));
 
 app.use("/health", healthRouter);
@@ -45,15 +49,18 @@ app.use("/api/v1/stats", statsRouter);
 
 app.use(errorMiddleware);
 
+const httpServer = createServer(app);
+
 async function start() {
   await redis.connect();
-  const server = app.listen(env.PORT, () => {
+  initializeSocket(httpServer);
+  httpServer.listen(env.PORT, () => {
     console.log(`[raquel-api] listening on http://localhost:${env.PORT}`);
   });
 
   const shutdown = () => {
     redis.disconnect();
-    server.close(() => process.exit(0));
+    httpServer.close(() => process.exit(0));
   };
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);

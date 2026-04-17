@@ -1,6 +1,7 @@
 import type { AuthPermissions, AuthTenant, AuthUser, LoginResponse } from "@raquel/types";
 import { create } from "zustand";
 import { api, registerAuthInterceptors } from "@/lib/api";
+import { connectSocket, disconnectSocket } from "@/lib/socket";
 
 interface AuthState {
   user: AuthUser | null;
@@ -32,9 +33,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setTokens: (accessToken, refreshToken) => {
     set({ accessToken, refreshToken, isAuthenticated: true });
+    connectSocket(accessToken);
   },
 
   clear: () => {
+    disconnectSocket();
     set({
       user: null,
       tenant: null,
@@ -61,6 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         tenant,
         isAuthenticated: true,
       });
+      connectSocket(accessToken);
     } finally {
       set({ isLoading: false });
     }
@@ -90,6 +94,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         tenant,
         isAuthenticated: true,
       });
+      connectSocket(accessToken);
     } finally {
       set({ isLoading: false });
     }
@@ -107,6 +112,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: res.data.data.accessToken,
         refreshToken: res.data.data.refreshToken,
       });
+      connectSocket(res.data.data.accessToken);
       return true;
     } catch {
       get().clear();

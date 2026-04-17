@@ -1,6 +1,14 @@
-import { randomBytes } from "node:crypto";
 import { prisma, withTenantTransaction } from "@/config/db";
+import { emitToQrRoom, emitToTenant } from "@/config/socket";
 import { Errors } from "@/lib/errors";
+import {
+  QR_REFRESH_INTERVAL_SECONDS,
+  QR_TOKEN_TTL_SECONDS,
+  clearQrToken,
+  generateQrToken,
+  incrementScanAttempts,
+  lookupQrToken,
+} from "@/lib/qr";
 import { created, ok, paginated } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
@@ -211,6 +219,9 @@ attendanceRouter.post("/sessions/:id/finalize", ...adminOrTeacher, async (req, r
       data: { isFinalized: true, qrCode: null, qrExpiresAt: null },
     }),
   );
+  await clearQrToken(id);
+  emitToTenant(tenantId, "attendance:session:finalized", { sessionId: id });
+  emitToTenant(tenantId, "stats:updated", {});
   return ok(res, updated);
 });
 
@@ -314,6 +325,13 @@ attendanceRouter.post(
       await recomputeTotals(tx, session.id);
       return r;
     });
+    emitToTenant(tenantId, "attendance:marked", {
+      sessionId: session.id,
+      studentId: body.studentId,
+      status: body.status,
+      batchId: session.batchId,
+    });
+    emitToTenant(tenantId, "stats:updated", {});
     return ok(res, record);
   },
 );
@@ -352,6 +370,13 @@ attendanceRouter.post(
       await recomputeTotals(tx, session.id);
       return out;
     });
+    emitToTenant(tenantId, "attendance:marked", {
+      sessionId: session.id,
+      batchId: session.batchId,
+      bulk: true,
+      count: records.length,
+    });
+    emitToTenant(tenantId, "stats:updated", {});
     return ok(res, records);
   },
 );
@@ -404,6 +429,13 @@ attendanceRouter.post(
         },
       },
     });
+    emitToTenant(tenantId, "attendance:marked", {
+      sessionId: session.id,
+      batchId: session.batchId,
+      bulk: true,
+      count: records.length,
+    });
+    emitToTenant(tenantId, "stats:updated", {});
     return ok(res, { marked: records.length, records: full });
   },
 );
@@ -578,40 +610,76 @@ attendanceRouter.post("/sessions/:id/generate-qr", ...adminOrTeacher, async (req
   const session = await getSessionOrThrow(id, tenantId);
   ensureEditable(session);
 
-  const qrCode = randomBytes(32).toString("hex");
-  const qrExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  const { token, expiresAt } = await generateQrToken(session.id, tenantId);
 
-  const updated = await withTenantTransaction(prisma, tenantId, (tx) =>
-    tx.attendanceSession.update({
-      where: { id },
-      data: { qrCode, qrExpiresAt },
-      select: { id: true, qrCode: true, qrExpiresAt: true, batchId: true },
-    }),
-  );
-  return ok(res, {
-    sessionId: updated.id,
-    qrCode: updated.qrCode,
-    expiresAt: updated.qrExpiresAt,
+  emitToQrRoom(tenantId, session.id, "attendance:qr:refresh", {
+    sessionId: session.id,
+    qrCode: token,
+    expiresAt,
+    validFor: QR_TOKEN_TTL_SECONDS,
+    refreshInterval: QR_REFRESH_INTERVAL_SECONDS,
   });
+
+  return ok(res, {
+    sessionId: session.id,
+    qrCode: token,
+    expiresAt,
+    validFor: QR_TOKEN_TTL_SECONDS,
+    refreshInterval: QR_REFRESH_INTERVAL_SECONDS,
+  });
+});
+
+attendanceRouter.post("/sessions/:id/refresh-qr", ...adminOrTeacher, async (req, res) => {
+  const id = req.params.id as string;
+  const tenantId = req.user!.tenantId;
+  const session = await getSessionOrThrow(id, tenantId);
+  ensureEditable(session);
+
+  const { token, expiresAt } = await generateQrToken(session.id, tenantId);
+
+  emitToQrRoom(tenantId, session.id, "attendance:qr:refresh", {
+    sessionId: session.id,
+    qrCode: token,
+    expiresAt,
+    validFor: QR_TOKEN_TTL_SECONDS,
+    refreshInterval: QR_REFRESH_INTERVAL_SECONDS,
+  });
+
+  return ok(res, {
+    sessionId: session.id,
+    qrCode: token,
+    expiresAt,
+    validFor: QR_TOKEN_TTL_SECONDS,
+    refreshInterval: QR_REFRESH_INTERVAL_SECONDS,
+  });
+});
+
+attendanceRouter.post("/sessions/:id/stop-qr", ...adminOrTeacher, async (req, res) => {
+  const id = req.params.id as string;
+  const tenantId = req.user!.tenantId;
+  const session = await getSessionOrThrow(id, tenantId);
+  await clearQrToken(session.id);
+  return ok(res, { stopped: true });
 });
 
 attendanceRouter.get("/qr/:code/status", async (req, res) => {
   const code = req.params.code as string;
-  const session = await prisma.attendanceSession.findUnique({
-    where: { qrCode: code },
+  const data = await lookupQrToken(code);
+  if (!data) {
+    return ok(res, { valid: false, reason: "QR_EXPIRED" });
+  }
+  const session = await prisma.attendanceSession.findFirst({
+    where: { id: data.sessionId, tenantId: data.tenantId },
     include: {
       batch: { select: { id: true, name: true } },
       subject: { select: { id: true, name: true } },
     },
   });
-  if (!session || !session.qrExpiresAt) {
+  if (!session) {
     return ok(res, { valid: false, reason: "QR_NOT_FOUND" });
   }
   if (session.isFinalized) {
     return ok(res, { valid: false, reason: "SESSION_FINALIZED" });
-  }
-  if (session.qrExpiresAt.getTime() < Date.now()) {
-    return ok(res, { valid: false, reason: "QR_EXPIRED" });
   }
   return ok(res, {
     valid: true,
@@ -622,7 +690,6 @@ attendanceRouter.get("/qr/:code/status", async (req, res) => {
     startTime: session.startTime,
     endTime: session.endTime,
     type: session.type,
-    expiresAt: session.qrExpiresAt,
   });
 });
 
@@ -635,30 +702,39 @@ attendanceRouter.post(
     const tenantId = req.user!.tenantId;
     const { qrCode } = req.body as import("@raquel/types").QrVerify;
 
-    const session = await prisma.attendanceSession.findUnique({
-      where: { qrCode },
+    const data = await lookupQrToken(qrCode);
+    if (!data || data.tenantId !== tenantId) {
+      throw Errors.badRequest(
+        "QR code expired — ask your teacher to show the current code",
+        "QR_EXPIRED",
+      );
+    }
+
+    const session = await prisma.attendanceSession.findFirst({
+      where: { id: data.sessionId, tenantId },
       include: {
         batch: { select: { id: true, name: true } },
         subject: { select: { id: true, name: true } },
       },
     });
-    if (!session || session.tenantId !== tenantId) {
-      throw Errors.badRequest("Invalid QR code", "QR_INVALID");
-    }
+    if (!session) throw Errors.badRequest("Invalid QR code", "QR_INVALID");
     if (session.isFinalized) {
       throw Errors.badRequest("This session has been finalized", "SESSION_FINALIZED");
-    }
-    if (!session.qrExpiresAt || session.qrExpiresAt.getTime() < Date.now()) {
-      throw Errors.badRequest(
-        "QR code expired — please ask tutor to generate a new one",
-        "QR_EXPIRED",
-      );
     }
 
     const student = await prisma.student.findFirst({
       where: { userId: req.user!.id, tenantId, deletedAt: null },
+      include: { user: { select: { name: true } } },
     });
     if (!student) throw Errors.badRequest("Student profile not found", "NOT_STUDENT");
+
+    const attempts = await incrementScanAttempts(session.id, student.id);
+    if (attempts > 3) {
+      throw Errors.badRequest(
+        "Too many scan attempts — please ask your teacher for help",
+        "SCAN_RATE_LIMIT",
+      );
+    }
 
     const { deviceInfo, ipAddress } = clientDeviceInfo(req);
 
@@ -677,6 +753,27 @@ attendanceRouter.post(
       await recomputeTotals(tx, session.id);
       return r;
     });
+
+    const latest = await prisma.attendanceSession.findUnique({
+      where: { id: session.id },
+      include: {
+        _count: { select: { records: true } },
+        batch: { select: { _count: { select: { students: true } } } },
+      },
+    });
+    emitToQrRoom(tenantId, session.id, "attendance:scanned", {
+      studentId: student.id,
+      studentName: student.user.name,
+      totalScanned: latest?._count.records ?? 0,
+      totalStudents: latest?.batch._count.students ?? 0,
+    });
+    emitToTenant(tenantId, "attendance:marked", {
+      sessionId: session.id,
+      studentId: student.id,
+      status: "PRESENT",
+      batchId: session.batchId,
+    });
+    emitToTenant(tenantId, "stats:updated", {});
 
     return ok(res, {
       success: true,

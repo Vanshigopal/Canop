@@ -1,25 +1,109 @@
-import { Link } from "react-router-dom";
+import { Badge } from "@/components/primitives";
+import { useSocket } from "@/hooks/useSocket";
+import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth";
 import { useStatsStore } from "@/stores/stats";
-import { Users, GraduationCap, CheckSquare, IndianRupee, Lock, ChevronRight } from "lucide-react";
-import { Badge } from "@/components/primitives";
+import {
+  CheckSquare,
+  ChevronRight,
+  GraduationCap,
+  IndianRupee,
+  Lock,
+  RefreshCw,
+  Users,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+
+type Period = "today" | "week" | "month" | "quarter";
+
+interface BatchOption {
+  id: string;
+  name: string;
+}
 
 export function AdminDashboard() {
   const user = useAuthStore((s) => s.user);
-  const { studentCount, batchCount, teacherCount, todayAttendance } = useStatsStore();
+  const { studentCount, batchCount, teacherCount, todayAttendance, fetch } = useStatsStore();
+  const [batches, setBatches] = useState<BatchOption[]>([]);
+  const [filterBatchId, setFilterBatchId] = useState("");
+  const [period, setPeriod] = useState<Period>("today");
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetch();
+    api.get("/api/v1/batches").then((r) => {
+      setBatches(
+        r.data.data.map((b: { id: string; name: string }) => ({ id: b.id, name: b.name })),
+      );
+    });
+  }, [fetch]);
+
+  useSocket("stats:updated", () => {
+    fetch();
+  });
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const todayPct =
-    todayAttendance && todayAttendance.overallTotal > 0 ? `${todayAttendance.percentage}%` : "—";
+  const filteredSessions = useMemo(() => {
+    if (!todayAttendance) return [];
+    if (!filterBatchId) return todayAttendance.sessions;
+    return todayAttendance.sessions.filter((s) => s.batch.id === filterBatchId);
+  }, [todayAttendance, filterBatchId]);
+
+  const scopedTotals = useMemo(() => {
+    const present = filteredSessions.reduce((s, sess) => s + sess.totalPresent + sess.totalLate, 0);
+    const total = filteredSessions.reduce(
+      (s, sess) => s + sess.totalPresent + sess.totalAbsent + sess.totalLate,
+      0,
+    );
+    const pct = total > 0 ? Math.round((present / total) * 1000) / 10 : null;
+    return { present, total, pct };
+  }, [filteredSessions]);
+
+  const scopedBatchCount = filterBatchId ? 1 : batchCount;
+  const scopedStudentCount = filterBatchId
+    ? filteredSessions[0]?.batch.studentCount ?? studentCount
+    : studentCount;
+  const todayPct = scopedTotals.pct !== null ? `${scopedTotals.pct}%` : "—";
 
   const stats = [
-    { label: "Active Students", value: String(studentCount), icon: Users, bg: "#FECDD3", fg: "#EC4899" },
-    { label: "Batches Running", value: String(batchCount), icon: GraduationCap, bg: "#BAE6FD", fg: "#0284C7" },
-    { label: "Teachers", value: String(teacherCount), icon: CheckSquare, bg: "#BBF7D0", fg: "#059669" },
-    { label: "Today's Attendance", value: todayPct, icon: IndianRupee, bg: "#FEF3C7", fg: "#D97706" },
+    {
+      label: "Active Students",
+      value: <AnimatedNumber value={scopedStudentCount} />,
+      icon: Users,
+      bg: "#FECDD3",
+      fg: "#EC4899",
+    },
+    {
+      label: "Batches Running",
+      value: <AnimatedNumber value={scopedBatchCount} />,
+      icon: GraduationCap,
+      bg: "#BAE6FD",
+      fg: "#0284C7",
+    },
+    {
+      label: "Teachers",
+      value: <AnimatedNumber value={teacherCount} />,
+      icon: CheckSquare,
+      bg: "#BBF7D0",
+      fg: "#059669",
+    },
+    {
+      label: "Today's Attendance",
+      value: todayPct,
+      icon: IndianRupee,
+      bg: "#FEF3C7",
+      fg: "#D97706",
+    },
   ];
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await fetch();
+    setTimeout(() => setRefreshing(false), 400);
+  }
 
   return (
     <div>
@@ -27,9 +111,42 @@ export function AdminDashboard() {
         {greeting},{" "}
         <span className="italic text-coral">{user?.name?.split(" ")[0] || "Admin"}</span>.
       </h1>
-      <p className="text-text-muted text-md mb-8">
+      <p className="text-text-muted text-md mb-6">
         Here&apos;s what&apos;s happening at your institute today.
       </p>
+
+      <div className="flex gap-2 items-center mb-6 flex-wrap">
+        <select
+          value={filterBatchId}
+          onChange={(e) => setFilterBatchId(e.target.value)}
+          className="rounded-md border border-border-soft bg-white/92 px-3 py-2 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
+        >
+          <option value="">All batches</option>
+          {batches.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={period}
+          onChange={(e) => setPeriod(e.target.value as Period)}
+          className="rounded-md border border-border-soft bg-white/92 px-3 py-2 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
+        >
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="quarter">This Quarter</option>
+        </select>
+        <button
+          type="button"
+          onClick={handleRefresh}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border-soft bg-white/92 px-3 py-2 text-sm text-text-muted hover:text-text-primary"
+          aria-label="Refresh"
+        >
+          <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
         {stats.map((stat) => {
@@ -60,13 +177,19 @@ export function AdminDashboard() {
             Go to attendance →
           </Link>
         </div>
-        {!todayAttendance || todayAttendance.sessions.length === 0 ? (
-          <p className="text-sm text-text-dim">No sessions scheduled for today yet. Start one from the Attendance page.</p>
+        {!todayAttendance || filteredSessions.length === 0 ? (
+          <p className="text-sm text-text-dim">
+            No sessions {filterBatchId ? "for this batch" : "scheduled today"} yet. Start one from the
+            Attendance page.
+          </p>
         ) : (
           <div className="divide-y divide-border-soft -mx-2">
-            {todayAttendance.sessions.map((s) => {
+            {filteredSessions.map((s) => {
               const total = s.totalPresent + s.totalAbsent + s.totalLate;
-              const pct = s.batch.studentCount > 0 ? Math.round((s.totalPresent / s.batch.studentCount) * 100) : 0;
+              const pct =
+                s.batch.studentCount > 0
+                  ? Math.round((s.totalPresent / s.batch.studentCount) * 100)
+                  : 0;
               return (
                 <Link
                   key={s.id}
@@ -77,17 +200,14 @@ export function AdminDashboard() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-text-primary">{s.batch.name}</span>
                       <Badge tone="info">{s.type.charAt(0) + s.type.slice(1).toLowerCase()}</Badge>
-                      {s.subject && <span className="text-2xs text-text-dim">· {s.subject.name}</span>}
-                      {s.isFinalized ? (
-                        <Badge tone="neutral">
-                          <Lock size={10} className="mr-0.5" /> Finalized
-                        </Badge>
-                      ) : (
-                        <Badge tone="warning">In progress</Badge>
+                      {s.subject && (
+                        <span className="text-2xs text-text-dim">· {s.subject.name}</span>
                       )}
+                      <SessionStatusBadge isFinalized={s.isFinalized} hasActivity={total > 0} />
                     </div>
                     <div className="text-2xs text-text-dim mt-0.5">
-                      {s.startTime ?? "—"} — {s.endTime ?? "—"} · {total}/{s.batch.studentCount} marked
+                      {s.startTime ?? "—"} — {s.endTime ?? "—"} · {total}/{s.batch.studentCount}{" "}
+                      marked
                     </div>
                   </div>
                   <div className="text-right">
@@ -112,6 +232,50 @@ export function AdminDashboard() {
       </div>
     </div>
   );
+}
+
+function SessionStatusBadge({
+  isFinalized,
+  hasActivity,
+}: {
+  isFinalized: boolean;
+  hasActivity: boolean;
+}) {
+  if (isFinalized) {
+    return (
+      <Badge tone="neutral">
+        <Lock size={10} className="mr-0.5" /> Finalized
+      </Badge>
+    );
+  }
+  if (hasActivity) {
+    return (
+      <Badge tone="success">
+        <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse-slow mr-1" />
+        In progress
+      </Badge>
+    );
+  }
+  return <Badge tone="warning">Not started</Badge>;
+}
+
+function AnimatedNumber({ value }: { value: number }) {
+  const [display, setDisplay] = useState(value);
+  useEffect(() => {
+    if (value === display) return;
+    const from = display;
+    const to = value;
+    const steps = 12;
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      setDisplay(Math.round(from + ((to - from) * i) / steps));
+      if (i >= steps) clearInterval(id);
+    }, 30);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return <>{display}</>;
 }
 
 function Upcoming({ session, text }: { session: number; text: string }) {

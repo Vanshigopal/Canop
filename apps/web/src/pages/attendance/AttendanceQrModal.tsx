@@ -1,71 +1,110 @@
 import { Button } from "@/components/primitives";
+import { useSocket } from "@/hooks/useSocket";
 import { api } from "@/lib/api";
-import { RefreshCw, X } from "lucide-react";
+import { joinQrRoom, leaveQrRoom } from "@/lib/socket";
+import { X } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Props {
   sessionId: string;
-  initialCode: string | null;
-  initialExpiresAt: string | null;
   onClose: () => void;
 }
 
-export function AttendanceQrModal({ sessionId, initialCode, initialExpiresAt, onClose }: Props) {
-  const [qrCode, setQrCode] = useState<string | null>(initialCode);
-  const [expiresAt, setExpiresAt] = useState<string | null>(initialExpiresAt);
-  const [remaining, setRemaining] = useState<number>(0);
-  const [loading, setLoading] = useState(false);
+interface QrPayload {
+  sessionId: string;
+  qrCode: string;
+  expiresAt: string;
+  validFor: number;
+  refreshInterval: number;
+}
+
+interface ScanEvent {
+  studentId: string;
+  studentName: string;
+  totalScanned: number;
+  totalStudents: number;
+}
+
+export function AttendanceQrModal({ sessionId, onClose }: Props) {
+  const [qr, setQr] = useState<QrPayload | null>(null);
   const [error, setError] = useState("");
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [scanInfo, setScanInfo] = useState<ScanEvent | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function generate() {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await api.post(`/api/v1/attendance/sessions/${sessionId}/generate-qr`);
-      setQrCode(res.data.data.qrCode);
-      setExpiresAt(res.data.data.expiresAt);
-    } catch (e: unknown) {
-      setError(
-        (e as { response?: { data?: { title?: string } } })?.response?.data?.title ||
-          "Failed to generate QR",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const generate = useCallback(
+    async (refresh = false) => {
+      setError("");
+      try {
+        const path = refresh ? "refresh-qr" : "generate-qr";
+        const res = await api.post(`/api/v1/attendance/sessions/${sessionId}/${path}`);
+        setQr(res.data.data);
+      } catch (e: unknown) {
+        setError(
+          (e as { response?: { data?: { title?: string } } })?.response?.data?.title ||
+            "Failed to generate QR",
+        );
+      }
+    },
+    [sessionId],
+  );
 
+  // Initial generation + cadence
   useEffect(() => {
-    if (!initialCode) generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    joinQrRoom(sessionId);
+    generate(false);
 
-  useEffect(() => {
-    if (!expiresAt) {
-      setRemaining(0);
-      return;
-    }
-    function tick() {
-      if (!expiresAt) return;
-      const r = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
-      setRemaining(r);
-    }
-    tick();
-    timerRef.current = setInterval(tick, 1000);
+    refreshTimer.current = setInterval(() => {
+      generate(true);
+    }, 15_000);
+
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      leaveQrRoom(sessionId);
+      if (refreshTimer.current) clearInterval(refreshTimer.current);
+      api.post(`/api/v1/attendance/sessions/${sessionId}/stop-qr`).catch(() => {
+        /* noop */
+      });
     };
-  }, [expiresAt]);
+  }, [sessionId, generate]);
 
-  const minutes = Math.floor(remaining / 60);
-  const seconds = remaining % 60;
-  const expired = remaining === 0;
+  // Progress bar animation
+  useEffect(() => {
+    if (!qr) return;
+    if (progressTimer.current) clearInterval(progressTimer.current);
+    const start = Date.now();
+    progressTimer.current = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.min(100, (elapsed / 15_000) * 100);
+      setProgress(pct);
+      if (pct >= 100 && progressTimer.current) {
+        clearInterval(progressTimer.current);
+      }
+    }, 100);
+    return () => {
+      if (progressTimer.current) clearInterval(progressTimer.current);
+    };
+  }, [qr]);
+
+  // Listen for server-pushed refresh (from other tutor devices, etc.)
+  useSocket<QrPayload>("attendance:qr:refresh", (data) => {
+    if (data.sessionId === sessionId) {
+      setQr(data);
+    }
+  });
+
+  useSocket<ScanEvent>("attendance:scanned", (data) => {
+    setScanInfo(data);
+  });
+
   const tenantSlug = getTenantSlug();
   const host = window.location.host;
   const baseHost =
     tenantSlug && !host.startsWith(`${tenantSlug}.`) ? `${tenantSlug}.${host}` : host;
-  const url = qrCode ? `${window.location.protocol}//${baseHost}/attendance/scan/${qrCode}` : "";
+  const url = qr?.qrCode
+    ? `${window.location.protocol}//${baseHost}/attendance/scan/${qr.qrCode}`
+    : "";
 
   return (
     <div
@@ -77,8 +116,15 @@ export function AttendanceQrModal({ sessionId, initialCode, initialExpiresAt, on
         style={{ animation: "scaleIn 0.15s ease-out" }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-lg">Scan to mark attendance</h2>
-          <button onClick={onClose} className="p-1 text-text-dim hover:text-text-body">
+          <div>
+            <h2 className="font-display text-lg">Scan to mark attendance</h2>
+            <p className="text-2xs text-text-dim mt-0.5">Refreshes every 15 seconds</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 text-text-dim hover:text-text-body"
+          >
             <X size={18} />
           </button>
         </div>
@@ -90,37 +136,54 @@ export function AttendanceQrModal({ sessionId, initialCode, initialExpiresAt, on
         )}
 
         <div className="flex flex-col items-center gap-4">
-          <div className="p-4 bg-white rounded-lg shadow-sm">
-            {qrCode && !expired ? (
-              <QRCodeCanvas value={url} size={240} level="M" />
+          <div
+            className="p-4 bg-white rounded-lg shadow-sm relative"
+            style={{ transition: "opacity 200ms ease" }}
+          >
+            {qr?.qrCode ? (
+              <QRCodeCanvas
+                key={qr.qrCode}
+                value={url}
+                size={240}
+                level="M"
+                style={{ animation: "fadeIn 300ms ease" }}
+              />
             ) : (
               <div className="w-[240px] h-[240px] grid place-items-center text-xs text-text-dim">
-                {expired ? "QR expired" : "Generating..."}
+                Generating...
               </div>
             )}
           </div>
 
-          {qrCode && !expired && (
-            <div className="text-center">
+          <div className="w-full">
+            <div className="h-1.5 bg-bg-warm rounded-full overflow-hidden">
               <div
-                className={`font-mono text-2xl font-semibold ${remaining < 60 ? "text-danger" : "text-indigo"}`}
-              >
-                {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-              </div>
-              <div className="text-2xs text-text-dim uppercase tracking-wider">Expires in</div>
+                className="h-full rounded-full"
+                style={{
+                  width: `${progress}%`,
+                  background: "linear-gradient(90deg, #4F46E5, #7C3AED)",
+                  transition: "width 100ms linear",
+                }}
+              />
             </div>
-          )}
+            <div className="flex items-center justify-between mt-1.5 text-2xs text-text-dim">
+              <span>New code in {Math.max(0, Math.ceil((100 - progress) * 0.15))}s</span>
+              {scanInfo ? (
+                <span className="text-success font-medium">
+                  Scanned: {scanInfo.totalScanned} / {scanInfo.totalStudents}
+                </span>
+              ) : (
+                <span>Waiting for scans...</span>
+              )}
+            </div>
+          </div>
 
-          <div className="text-2xs text-text-muted text-center break-all max-w-xs">{url}</div>
+          <div className="text-2xs text-text-muted text-center break-all max-w-xs font-mono">
+            {url}
+          </div>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<RefreshCw size={14} />}
-            loading={loading}
-            onClick={generate}
-          >
-            {expired ? "Generate New QR" : "Refresh QR"}
+          <Button variant="secondary" size="sm" onClick={() => generate(true)}>
+            Refresh now
           </Button>
         </div>
       </div>

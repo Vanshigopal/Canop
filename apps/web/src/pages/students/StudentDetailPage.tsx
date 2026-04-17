@@ -1,9 +1,11 @@
 import { Badge } from "@/components/primitives";
 import { api } from "@/lib/api";
-import { ArrowLeft, Calendar, User } from "lucide-react";
+import { ArrowLeft, BarChart3, Calendar, IndianRupee, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { StudentAttendanceTab } from "./StudentAttendanceTab";
+import { AcademicTab } from "./tabs/AcademicTab";
+import { FeesTab } from "./tabs/FeesTab";
 
 interface Student {
   id: string;
@@ -26,7 +28,14 @@ interface Student {
   }>;
 }
 
-type Tab = "overview" | "attendance";
+type Tab = "overview" | "attendance" | "academic" | "fees";
+
+const TABS: Array<{ key: Tab; label: string; icon: typeof User }> = [
+  { key: "overview", label: "Overview", icon: User },
+  { key: "attendance", label: "Attendance", icon: Calendar },
+  { key: "academic", label: "Academic", icon: BarChart3 },
+  { key: "fees", label: "Fees", icon: IndianRupee },
+];
 
 export function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -76,33 +85,32 @@ export function StudentDetailPage() {
         </div>
       </div>
 
-      <div className="border-b border-border-soft mb-6 flex gap-1">
-        {(["overview", "attendance"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === t
-                ? "border-indigo text-text-primary"
-                : "border-transparent text-text-muted hover:text-text-primary"
-            }`}
-          >
-            {t === "overview" ? (
+      <div className="border-b border-border-soft mb-6 flex gap-1 overflow-x-auto">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
+                tab === t.key
+                  ? "border-indigo text-text-primary"
+                  : "border-transparent text-text-muted hover:text-text-primary"
+              }`}
+            >
               <span className="inline-flex items-center gap-1.5">
-                <User size={14} /> Overview
+                <Icon size={14} /> {t.label}
               </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5">
-                <Calendar size={14} /> Attendance
-              </span>
-            )}
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       {tab === "overview" && <StudentOverview student={student} />}
       {tab === "attendance" && <StudentAttendanceTab studentId={student.id} />}
+      {tab === "academic" && <AcademicTab />}
+      {tab === "fees" && <FeesTab />}
     </div>
   );
 }

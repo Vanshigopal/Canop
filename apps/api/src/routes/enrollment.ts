@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { EnrollmentFormSchema } from "@raquel/types";
 import { prisma, withTenantTransaction } from "@/config/db";
+import { emitToTenant } from "@/config/socket";
 import { Errors } from "@/lib/errors";
 import { ok, created } from "@/lib/response";
 import { validate } from "@/middleware/validate";
@@ -80,6 +81,12 @@ enrollmentRouter.post("/:code", validate(EnrollmentFormSchema), async (req, res)
       },
     }),
   );
+
+  emitToTenant(invite.tenantId, "joinRequest:new", {
+    id: joinRequest.id,
+    studentName: joinRequest.studentName,
+  });
+  emitToTenant(invite.tenantId, "stats:updated", {});
 
   return created(res, { id: joinRequest.id, message: "Application submitted successfully" });
 });

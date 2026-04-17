@@ -141,4 +141,38 @@
       transform: scale(1);
     }
   }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  .skeleton {
+    background: linear-gradient(90deg, #f5efe6 25%, #faf7f2 50%, #f5efe6 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+  }
+
+  /* iOS Safari: prevent zoom on input focus */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  @media (min-width: 640px) {
+    input,
+    select,
+    textarea {
+      font-size: 14px;
+    }
+  }
+
+  /* iOS Safari: smooth momentum scrolling */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+  }
 }
