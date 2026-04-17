@@ -2,3 +2,8 @@ export * from "./tenant";
 export * from "./user";
 export * from "./auth";
 export * from "./api";
+export * from "./subject";
+export * from "./class";
+export * from "./batch";
+export * from "./teacher";
+export * from "./enrollment";

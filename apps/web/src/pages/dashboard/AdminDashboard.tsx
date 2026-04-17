@@ -1,15 +1,8 @@
 import { useAuthStore } from "@/stores/auth";
+import { useStatsStore } from "@/stores/stats";
 import { Users, GraduationCap, CheckSquare, IndianRupee } from "lucide-react";
 
-const stats = [
-  { label: "Active Students", value: "247", icon: Users, bg: "#FECDD3", fg: "#EC4899" },
-  { label: "Batches Running", value: "14", icon: GraduationCap, bg: "#BAE6FD", fg: "#0284C7" },
-  { label: "Today's Attendance", value: "91%", icon: CheckSquare, bg: "#BBF7D0", fg: "#059669" },
-  { label: "Revenue MTD", value: "\u20B94.82L", icon: IndianRupee, bg: "#FEF3C7", fg: "#D97706" },
-];
-
 const upcoming = [
-  { session: 5, desc: "Student enrollment, batch management, and join request approval" },
   { session: 6, desc: "Attendance marking and timetable builder" },
   { session: 7, desc: "Exams, marks entry, OMR scanning, and gradebook" },
   { session: 8, desc: "Fee management and payment gateway integration" },
@@ -17,9 +10,17 @@ const upcoming = [
 
 export function AdminDashboard() {
   const user = useAuthStore((s) => s.user);
+  const { studentCount, batchCount, teacherCount } = useStatsStore();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  const stats = [
+    { label: "Active Students", value: String(studentCount), icon: Users, bg: "#FECDD3", fg: "#EC4899" },
+    { label: "Batches Running", value: String(batchCount), icon: GraduationCap, bg: "#BAE6FD", fg: "#0284C7" },
+    { label: "Teachers", value: String(teacherCount), icon: CheckSquare, bg: "#BBF7D0", fg: "#059669" },
+    { label: "Revenue MTD", value: "—", icon: IndianRupee, bg: "#FEF3C7", fg: "#D97706" },
+  ];
 
   return (
     <div>

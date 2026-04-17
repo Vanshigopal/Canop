@@ -1,19 +1,21 @@
 import { PrismaClient } from "@prisma/client";
 
-/**
- * Enable Row-Level Security on all tenant-scoped tables.
- *
- * Pattern: each table gets a policy that checks
- *   tenant_id = current_setting('app.current_tenant')::uuid
- *
- * The application sets this via:
- *   SET LOCAL app.current_tenant = '<uuid>';
- * at the start of each transaction.
- *
- * The Tenant table itself does NOT get RLS (it's a global lookup table).
- */
 export async function enableRLS(prisma: PrismaClient): Promise<void> {
-  const tenantScopedTables = ["users", "sessions", "audit_logs", "permissions"];
+  const tenantScopedTables = [
+    "users",
+    "sessions",
+    "audit_logs",
+    "permissions",
+    "subjects",
+    "class_standards",
+    "batches",
+    "batch_subjects",
+    "teacher_subjects",
+    "students",
+    "guardians",
+    "invite_links",
+    "join_requests",
+  ];
 
   for (const table of tenantScopedTables) {
     await prisma.$executeRawUnsafe(
@@ -22,13 +24,9 @@ export async function enableRLS(prisma: PrismaClient): Promise<void> {
     await prisma.$executeRawUnsafe(
       `ALTER TABLE "${table}" FORCE ROW LEVEL SECURITY;`,
     );
-
-    // Drop existing policy if any (idempotent)
     await prisma.$executeRawUnsafe(
       `DROP POLICY IF EXISTS tenant_isolation ON "${table}";`,
     );
-
-    // Create isolation policy
     await prisma.$executeRawUnsafe(`
       CREATE POLICY tenant_isolation ON "${table}"
         USING (tenant_id = current_setting('app.current_tenant', true)::uuid)

@@ -1,10 +1,12 @@
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@raquel/ui";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { useAuthStore } from "@/stores/auth";
 import { useSidebarStore } from "@/stores/sidebar";
-import { getNavigationForRole } from "@/lib/navigation";
+import { useStatsStore } from "@/stores/stats";
+import { getNavigationForRole, type NavGroup } from "@/lib/navigation";
 import { SidebarNav } from "./SidebarNav";
 import { UserMenu } from "./UserMenu";
 
@@ -20,9 +22,23 @@ export function Sidebar({ className, forceExpanded }: SidebarProps) {
   const collapsed = useSidebarStore((s) => s.collapsed);
   const toggle = useSidebarStore((s) => s.toggle);
   const location = useLocation();
+  const stats = useStatsStore();
+
+  useEffect(() => {
+    if (user) stats.fetch();
+  }, [user]);
 
   const isCollapsed = forceExpanded ? false : collapsed;
-  const navGroups = getNavigationForRole(user?.role, permissions);
+  const baseNav = getNavigationForRole(user?.role, permissions);
+
+  const navGroups: NavGroup[] = baseNav.map((g) => ({
+    ...g,
+    items: g.items.map((item) => {
+      if (item.path === "/students" && stats.loaded) return { ...item, badge: String(stats.studentCount) };
+      if (item.path === "/join-requests" && stats.loaded) return { ...item, badge: stats.pendingJoinRequests > 0 ? String(stats.pendingJoinRequests) : undefined };
+      return item;
+    }),
+  }));
 
   return (
     <aside

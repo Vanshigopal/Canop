@@ -27,10 +27,12 @@ import { AnalyticsPage } from "@/pages/analytics/AnalyticsPage";
 import { EventsPage } from "@/pages/events/EventsPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { JoinRequestsPage } from "@/pages/join-requests/JoinRequestsPage";
+import { EnrollPage } from "@/pages/enroll/EnrollPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/signup", element: <SignupPage /> },
+  { path: "/enroll/:code", element: <EnrollPage /> },
   {
     path: "/",
     element: (
