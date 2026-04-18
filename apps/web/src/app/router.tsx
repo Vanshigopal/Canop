@@ -93,6 +93,11 @@ const JoinRequestsPage = lazy(() =>
 const AtRiskPage = lazy(() =>
   import("@/pages/at-risk/AtRiskPage").then((m) => ({ default: m.AtRiskPage })),
 );
+const DropoutRiskPage = lazy(() =>
+  import("@/pages/analytics/DropoutRiskPage").then((m) => ({
+    default: m.DropoutRiskPage,
+  })),
+);
 
 function lazyPage(node: React.ReactNode) {
   return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
@@ -271,6 +276,14 @@ export const router = createBrowserRouter([
         element: lazyPage(
           <RoleGuard roles={["ADMIN", "TEACHER", "STAFF"]}>
             <AtRiskPage />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "analytics/dropout-risk",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN", "TEACHER"]}>
+            <DropoutRiskPage />
           </RoleGuard>,
         ),
       },

@@ -75,6 +75,7 @@ export const adminNavigation: NavGroup[] = [
     items: [
       { name: "AI Assistant", path: "/ai-assistant", icon: Sparkles },
       { name: "At-Risk Students", path: "/at-risk", icon: AlertTriangle },
+      { name: "Dropout Risk", path: "/analytics/dropout-risk", icon: AlertTriangle },
       { name: "Analytics", path: "/analytics", icon: BarChart3 },
     ],
   },

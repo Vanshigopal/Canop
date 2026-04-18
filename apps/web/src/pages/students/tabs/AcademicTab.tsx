@@ -4,6 +4,7 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SubjectStrengthSection } from "../widgets/SubjectStrengthSection";
 import { EngagementScoreCard } from "../widgets/EngagementScoreCard";
+import { PerformancePredictionCard } from "../widgets/PerformancePredictionCard";
 import {
   Area,
   Bar,
@@ -131,6 +132,7 @@ export function AcademicTab({ studentId }: { studentId: string }) {
       </div>
 
       <SubjectStrengthSection studentId={studentId} />
+      <PerformancePredictionCard studentId={studentId} />
 
       {trendData.length > 0 && (
         <div className="glass-panel p-5">

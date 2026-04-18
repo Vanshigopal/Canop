@@ -16,6 +16,7 @@ import { batchesRouter } from "@/routes/batches";
 import { broadcastsRouter } from "@/routes/broadcasts";
 import { classesRouter } from "@/routes/classes";
 import { deliveriesRouter } from "@/routes/deliveries";
+import { dropoutRouter } from "@/routes/dropout";
 import { enrollmentRouter } from "@/routes/enrollment";
 import { examsRouter } from "@/routes/exams";
 import { feeCategoriesRouter } from "@/routes/feeCategories";
@@ -28,6 +29,7 @@ import { invitesRouter } from "@/routes/invites";
 import { joinRequestsRouter } from "@/routes/joinRequests";
 import { marksRouter } from "@/routes/marks";
 import { notificationConfigRouter } from "@/routes/notificationConfig";
+import { omrRouter } from "@/routes/omr";
 import { parentFeesRouter } from "@/routes/parentFees";
 import { paymentsRouter } from "@/routes/payments";
 import { retestsRouter } from "@/routes/retests";
@@ -86,6 +88,8 @@ app.use("/api/v1/student", studentGradebookRouter);
 app.use("/api/v1/retests", retestsRouter);
 app.use("/api/v1/intelligence", intelligenceRouter);
 app.use("/api/v1/search", searchRouter);
+app.use("/api/v1/omr", omrRouter);
+app.use("/api/v1/dropout", dropoutRouter);
 
 app.use(errorMiddleware);
 

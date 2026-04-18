@@ -46,3 +46,26 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  ml-service:
+    build:
+      context: ../../services/ml-service
+      dockerfile: Dockerfile
+    container_name: raquel-ml-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://raquel:raquel_dev_password@postgres:5432/raquel_dev
+      ML_SERVICE_API_KEY: dev-internal-key
+      ENVIRONMENT: development
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/ml-service/app/models/trained:/app/app/models/trained
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
