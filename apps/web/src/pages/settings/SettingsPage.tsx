@@ -1,17 +1,19 @@
 import { useState } from "react";
-import { Settings as SettingsIcon, Sparkles } from "lucide-react";
+import { BookOpen, Settings as SettingsIcon, Sparkles } from "lucide-react";
 import { ModuleStub } from "@/components/ModuleStub";
 import { AiFeaturesPage } from "./AiFeaturesPage";
+import { ClassesSettingsPage } from "./ClassesSettingsPage";
 
-type Tab = "general" | "ai-features";
+type Tab = "general" | "classes" | "ai-features";
 
 const TABS: { id: Tab; label: string; icon: typeof SettingsIcon }[] = [
   { id: "general", label: "General", icon: SettingsIcon },
+  { id: "classes", label: "Classes & Subjects", icon: BookOpen },
   { id: "ai-features", label: "AI Features", icon: Sparkles },
 ];
 
 export function SettingsPage() {
-  const [tab, setTab] = useState<Tab>("ai-features");
+  const [tab, setTab] = useState<Tab>("classes");
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -45,6 +47,7 @@ export function SettingsPage() {
           session={12}
         />
       )}
+      {tab === "classes" && <ClassesSettingsPage />}
       {tab === "ai-features" && <AiFeaturesPage />}
     </div>
   );

@@ -3,6 +3,7 @@ import { useSocket } from "@/hooks/useSocket";
 import { api } from "@/lib/api";
 import { BarChart3, FileText, GraduationCap, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { CreateExamWizard } from "./CreateExamWizard";
 import { ExamResultsTab } from "./ExamResultsTab";
 import { MarksEntryTab } from "./MarksEntryTab";
@@ -113,14 +114,22 @@ export function ExamsPage() {
             Create exams, enter marks, and publish results
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          leftIcon={<Plus size={14} />}
-          onClick={() => setWizardOpen(true)}
-        >
-          Create Exam
-        </Button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/analytics/academic"
+            className="text-xs font-medium text-indigo hover:underline"
+          >
+            View Academic Analytics →
+          </Link>
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<Plus size={14} />}
+            onClick={() => setWizardOpen(true)}
+          >
+            Create Exam
+          </Button>
+        </div>
       </div>
 
       <div className="border-b border-border-soft mb-6 flex gap-1 overflow-x-auto">

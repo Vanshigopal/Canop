@@ -56,11 +56,32 @@ subjectsRouter.patch("/:id", requireRole("ADMIN"), validate(UpdateSubjectSchema)
 
 subjectsRouter.delete("/:id", requireRole("ADMIN"), async (req, res) => {
   const id = req.params.id as string;
+  const tenantId = req.user!.tenantId;
   const subject = await prisma.subject.findFirst({
-    where: { id, tenantId: req.user!.tenantId, deletedAt: null },
+    where: { id, tenantId, deletedAt: null },
   });
   if (!subject) throw Errors.notFound("Subject");
-  await withTenantTransaction(prisma, req.user!.tenantId, (tx) =>
+
+  const [examCount, materialCount, videoCount, assignmentCount] = await Promise.all([
+    prisma.exam.count({ where: { subjectId: id, deletedAt: null } }),
+    prisma.studyMaterial.count({ where: { subjectId: id, deletedAt: null } }),
+    prisma.videoLecture.count({ where: { subjectId: id, deletedAt: null } }),
+    prisma.assignment.count({ where: { subjectId: id, deletedAt: null } }),
+  ]);
+  const deps: string[] = [];
+  if (examCount > 0) deps.push(`${examCount} exam${examCount === 1 ? "" : "s"}`);
+  if (materialCount > 0) deps.push(`${materialCount} material${materialCount === 1 ? "" : "s"}`);
+  if (videoCount > 0) deps.push(`${videoCount} video${videoCount === 1 ? "" : "s"}`);
+  if (assignmentCount > 0)
+    deps.push(`${assignmentCount} assignment${assignmentCount === 1 ? "" : "s"}`);
+  if (deps.length > 0) {
+    throw Errors.badRequest(
+      `This subject is used by ${deps.join(", ")}. Remove or reassign them first.`,
+      "SUBJECT_IN_USE",
+    );
+  }
+
+  await withTenantTransaction(prisma, tenantId, (tx) =>
     tx.subject.update({ where: { id }, data: { deletedAt: new Date() } }),
   );
   return noContent(res);

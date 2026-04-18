@@ -267,6 +267,7 @@ model Tenant {
   assignmentAttachments AssignmentAttachment[]
   assignmentSubmissions AssignmentSubmission[]
   submissionFiles       SubmissionFile[]
+  analyticsSnapshots    AnalyticsSnapshot[]
 
   @@map("tenants")
 }
@@ -320,6 +321,8 @@ model User {
   videoWatchSessions       VideoWatchSession[]
   createdAssignments       Assignment[]            @relation("AssignmentCreator")
   gradedSubmissions        AssignmentSubmission[]  @relation("SubmissionGrader")
+  dashboardLayout          DashboardLayout?
+  exportJobs               ExportJob[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -465,6 +468,7 @@ model Batch {
   materialAccess     MaterialBatchAccess[]
   videoAccess        VideoBatchAccess[]
   assignments        Assignment[]
+  assignmentAccess   AssignmentBatchAccess[]
 
   @@unique([tenantId, name, academicYear])
   @@index([tenantId])
@@ -1565,6 +1569,7 @@ model Assignment {
   createdBy           User                   @relation("AssignmentCreator", fields: [createdById], references: [id])
   attachments         AssignmentAttachment[]
   submissions         AssignmentSubmission[]
+  batchAccess         AssignmentBatchAccess[]
 
   @@index([tenantId])
   @@index([tenantId, batchId])
@@ -1642,4 +1647,130 @@ model SubmissionFile {
   @@index([tenantId])
   @@index([submissionId])
   @@map("submission_files")
+}
+
+// ════════════════════════════════════════════════════════
+// SESSION 14 — ANALYTICS & CUSTOMIZABLE DASHBOARD
+// ════════════════════════════════════════════════════════
+
+model DashboardLayout {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  layout    Json
+  widgets   Json
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@index([tenantId])
+  @@map("dashboard_layouts")
+}
+
+model AnalyticsSnapshot {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String   @map("tenant_id") @db.Uuid
+  snapshotDate         DateTime @map("snapshot_date") @db.Date
+
+  totalSessions        Int      @default(0) @map("total_sessions")
+  avgAttendancePercent Decimal  @default(0) @map("avg_attendance_percent") @db.Decimal(5, 2)
+  absentCount          Int      @default(0) @map("absent_count")
+  lateCount            Int      @default(0) @map("late_count")
+  anomalyCount         Int      @default(0) @map("anomaly_count")
+
+  examsPublished       Int      @default(0) @map("exams_published")
+  avgExamPercent       Decimal  @default(0) @map("avg_exam_percent") @db.Decimal(5, 2)
+  passRate             Decimal  @default(0) @map("pass_rate") @db.Decimal(5, 2)
+  pendingRetests       Int      @default(0) @map("pending_retests")
+
+  expectedRevenue      Decimal  @default(0) @map("expected_revenue") @db.Decimal(12, 2)
+  collectedRevenue     Decimal  @default(0) @map("collected_revenue") @db.Decimal(12, 2)
+  collectionRate       Decimal  @default(0) @map("collection_rate") @db.Decimal(5, 2)
+  overdueAmount        Decimal  @default(0) @map("overdue_amount") @db.Decimal(12, 2)
+  overdueCount         Int      @default(0) @map("overdue_count")
+
+  avgEngagementScore   Decimal  @default(0) @map("avg_engagement_score") @db.Decimal(5, 2)
+  atRiskCount          Int      @default(0) @map("at_risk_count")
+  activeStudents       Int      @default(0) @map("active_students")
+  totalStudents        Int      @default(0) @map("total_students")
+  loginCount           Int      @default(0) @map("login_count")
+
+  materialsViewed      Int      @default(0) @map("materials_viewed")
+  videosWatched        Int      @default(0) @map("videos_watched")
+  avgVideoCompletion   Decimal  @default(0) @map("avg_video_completion") @db.Decimal(5, 2)
+  assignmentsSubmitted Int      @default(0) @map("assignments_submitted")
+  assignmentsMissed    Int      @default(0) @map("assignments_missed")
+
+  messagesSent         Int      @default(0) @map("messages_sent")
+  messagesDelivered    Int      @default(0) @map("messages_delivered")
+  deliveryRate         Decimal  @default(0) @map("delivery_rate") @db.Decimal(5, 2)
+
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, snapshotDate])
+  @@index([tenantId])
+  @@index([tenantId, snapshotDate])
+  @@map("analytics_snapshots")
+}
+
+enum ExportFormat {
+  CSV
+  PDF
+}
+
+enum ExportStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ExportJob {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String       @map("tenant_id") @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+
+  reportType   String       @map("report_type") @db.VarChar(50)
+  format       ExportFormat
+  status       ExportStatus @default(QUEUED)
+
+  filters      Json?
+  fileKey      String?      @map("file_key") @db.VarChar(500)
+  fileName     String?      @map("file_name") @db.VarChar(255)
+  fileSize     Int?         @map("file_size")
+
+  errorMessage String?      @map("error_message") @db.VarChar(500)
+  startedAt    DateTime?    @map("started_at")
+  completedAt  DateTime?    @map("completed_at")
+  expiresAt    DateTime?    @map("expires_at")
+
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([status])
+  @@map("export_jobs")
+}
+
+model AssignmentBatchAccess {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  assignmentId String     @map("assignment_id") @db.Uuid
+  batchId      String     @map("batch_id") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  batch      Batch      @relation(fields: [batchId], references: [id])
+
+  @@unique([assignmentId, batchId])
+  @@index([tenantId])
+  @@index([batchId])
+  @@map("assignment_batch_access")
 }

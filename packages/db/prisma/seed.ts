@@ -1437,6 +1437,106 @@ async function main() {
     },
   });
 
+  // ════════════════════════════════════════════════════════
+  // SESSION 14 — Analytics snapshots + default dashboard layout
+  // ════════════════════════════════════════════════════════
+  console.log("[seed] Generating 30 days of analytics snapshots...");
+
+  const snapshotAnchor = new Date();
+  snapshotAnchor.setHours(0, 0, 0, 0);
+
+  function rand(min: number, max: number) {
+    return Math.round((min + Math.random() * (max - min)) * 10) / 10;
+  }
+
+  for (let daysAgo = 30; daysAgo >= 0; daysAgo--) {
+    const snapshotDate = new Date(snapshotAnchor);
+    snapshotDate.setDate(snapshotDate.getDate() - daysAgo);
+
+    const baseAttendance = 82;
+    const baseEngagement = 68;
+    const basePassRate = 74;
+    const trendFactor = (30 - daysAgo) / 30;
+
+    await prisma.analyticsSnapshot.upsert({
+      where: {
+        tenantId_snapshotDate: { tenantId: demoTenant.id, snapshotDate },
+      },
+      update: {},
+      create: {
+        tenantId: demoTenant.id,
+        snapshotDate,
+        totalSessions: Math.floor(3 + Math.random() * 6),
+        avgAttendancePercent: rand(baseAttendance - 5, baseAttendance + 7 * trendFactor),
+        absentCount: Math.floor(rand(5, 25)),
+        lateCount: Math.floor(rand(0, 8)),
+        anomalyCount: Math.floor(rand(0, 3)),
+        examsPublished: daysAgo % 7 === 0 ? 1 : 0,
+        avgExamPercent: rand(62, 78),
+        passRate: rand(basePassRate - 4, basePassRate + 6 * trendFactor),
+        pendingRetests: Math.floor(rand(2, 8)),
+        expectedRevenue: rand(48000, 55000),
+        collectedRevenue: rand(32000, 45000),
+        collectionRate: rand(65, 78 + 4 * trendFactor),
+        overdueAmount: rand(8000, 18000),
+        overdueCount: Math.floor(rand(3, 10)),
+        avgEngagementScore: rand(baseEngagement - 4, baseEngagement + 6 * trendFactor),
+        atRiskCount: Math.floor(rand(4, 12)),
+        activeStudents: Math.floor(rand(30, 45)),
+        totalStudents: 48,
+        loginCount: Math.floor(rand(20, 60)),
+        materialsViewed: Math.floor(rand(8, 25)),
+        videosWatched: Math.floor(rand(5, 20)),
+        avgVideoCompletion: rand(55, 80),
+        assignmentsSubmitted: Math.floor(rand(2, 12)),
+        assignmentsMissed: Math.floor(rand(0, 4)),
+        messagesSent: Math.floor(rand(3, 20)),
+        messagesDelivered: Math.floor(rand(3, 20)),
+        deliveryRate: rand(92, 99),
+      },
+    });
+  }
+  console.log(`[seed] 31 analytics snapshots created (today + last 30 days)`);
+
+  // Default dashboard layout for demo admin
+  const defaultLayout = [
+    { i: "w-student-count", x: 0, y: 0, w: 3, h: 2 },
+    { i: "w-attendance-today", x: 3, y: 0, w: 3, h: 2 },
+    { i: "w-revenue-mtd", x: 6, y: 0, w: 3, h: 2 },
+    { i: "w-pending-retests", x: 9, y: 0, w: 3, h: 2 },
+    { i: "w-attendance-trend", x: 0, y: 2, w: 6, h: 4 },
+    { i: "w-collection-trend", x: 6, y: 2, w: 6, h: 4 },
+    { i: "w-top-performers", x: 0, y: 6, w: 4, h: 4 },
+    { i: "w-at-risk", x: 4, y: 6, w: 4, h: 4 },
+    { i: "w-overdue-aging", x: 8, y: 6, w: 4, h: 4 },
+    { i: "w-recent-activity", x: 0, y: 10, w: 12, h: 4 },
+  ];
+  const defaultWidgets = [
+    { id: "w-student-count", type: "student_count", config: {} },
+    { id: "w-attendance-today", type: "attendance_today", config: {} },
+    { id: "w-revenue-mtd", type: "revenue_mtd", config: {} },
+    { id: "w-pending-retests", type: "pending_retests", config: {} },
+    { id: "w-attendance-trend", type: "attendance_trend", config: { days: 30 } },
+    { id: "w-collection-trend", type: "collection_trend", config: { months: 6 } },
+    { id: "w-top-performers", type: "top_performers", config: {} },
+    { id: "w-at-risk", type: "at_risk_students", config: {} },
+    { id: "w-overdue-aging", type: "overdue_aging", config: {} },
+    { id: "w-recent-activity", type: "recent_activity", config: {} },
+  ];
+
+  await prisma.dashboardLayout.upsert({
+    where: { userId: demoAdmin.id },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      userId: demoAdmin.id,
+      layout: defaultLayout,
+      widgets: defaultWidgets,
+      isDefault: true,
+    },
+  });
+  console.log(`[seed] Default dashboard layout for admin`);
+
   console.log("[seed] Done.");
 }
 

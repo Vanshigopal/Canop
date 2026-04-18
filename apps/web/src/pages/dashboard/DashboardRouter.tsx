@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
-import { AdminDashboard } from "./AdminDashboard";
+import { CustomizableDashboard } from "./CustomizableDashboard";
 import { TeacherDashboard } from "./TeacherDashboard";
 
 export function DashboardRouter() {
@@ -9,5 +9,5 @@ export function DashboardRouter() {
   if (role === "STUDENT") return <Navigate to="/portal/student" replace />;
   if (role === "PARENT") return <Navigate to="/portal/parent" replace />;
   if (role === "TEACHER") return <TeacherDashboard />;
-  return <AdminDashboard />;
+  return <CustomizableDashboard />;
 }

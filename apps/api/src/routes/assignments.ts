@@ -35,8 +35,11 @@ assignmentsRouter.get("/", async (req, res) => {
         select: { id: true, batchId: true },
       });
       if (!student || !student.batchId) return [];
-      where.batchId = student.batchId;
       where.status = { in: ["PUBLISHED", "CLOSED"] };
+      where.OR = [
+        { batchId: student.batchId },
+        { batchAccess: { some: { batchId: student.batchId } } },
+      ];
 
       const assignments = await tx.assignment.findMany({
         where,
@@ -102,7 +105,11 @@ assignmentsRouter.get("/:id", async (req, res) => {
         where: { userId: req.user!.id, deletedAt: null },
         select: { id: true, batchId: true },
       });
-      if (!student || student.batchId !== assignment.batchId) return null;
+      if (!student || !student.batchId) return null;
+      const access = await tx.assignmentBatchAccess.findFirst({
+        where: { assignmentId: assignment.id, batchId: student.batchId },
+      });
+      if (student.batchId !== assignment.batchId && !access) return null;
 
       const submission = await tx.assignmentSubmission.findUnique({
         where: {
@@ -142,7 +149,8 @@ assignmentsRouter.post(
       title: z.string().min(1).max(200),
       description: z.string().min(1),
       instructions: z.string().optional(),
-      batchId: z.string().uuid(),
+      batchId: z.string().uuid().optional(),
+      batchIds: z.array(z.string().uuid()).optional(),
       subjectId: z.string().uuid().optional(),
       deadline: z.string().datetime(),
       allowLateSubmission: z.boolean().default(true),
@@ -153,14 +161,24 @@ assignmentsRouter.post(
     const body = schema.parse(req.body);
     const tenantId = req.user!.tenantId;
 
+    const allBatchIds: string[] = body.batchIds?.length
+      ? body.batchIds
+      : body.batchId
+        ? [body.batchId]
+        : [];
+    if (allBatchIds.length === 0) {
+      throw Errors.validationFailed({ batchIds: "At least one batch is required" });
+    }
+    const primaryBatchId = allBatchIds[0] as string;
+
     const assignment = await withTenantTransaction(prisma, tenantId, async (tx) => {
-      return tx.assignment.create({
+      const created = await tx.assignment.create({
         data: {
           tenantId,
           title: body.title,
           description: body.description,
           instructions: body.instructions,
-          batchId: body.batchId,
+          batchId: primaryBatchId,
           subjectId: body.subjectId,
           deadline: new Date(body.deadline),
           allowLateSubmission: body.allowLateSubmission,
@@ -171,6 +189,19 @@ assignmentsRouter.post(
           createdById: req.user!.id,
         },
       });
+
+      if (allBatchIds.length > 0) {
+        await tx.assignmentBatchAccess.createMany({
+          data: allBatchIds.map((batchId) => ({
+            tenantId,
+            assignmentId: created.id,
+            batchId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      return created;
     });
 
     emitToTenant(tenantId, "assignment:created", {
@@ -203,8 +234,15 @@ assignmentsRouter.post(
         data: { status: "PUBLISHED", publishedAt: new Date() },
       });
 
+      const access = await tx.assignmentBatchAccess.findMany({
+        where: { assignmentId: existing.id },
+        select: { batchId: true },
+      });
+      const batchIds = access.length > 0
+        ? access.map((a) => a.batchId)
+        : [existing.batchId];
       const students = await tx.student.findMany({
-        where: { batchId: existing.batchId, deletedAt: null },
+        where: { batchId: { in: batchIds }, deletedAt: null },
         include: { user: { select: { id: true, name: true } }, guardians: true },
       });
 
@@ -318,7 +356,11 @@ assignmentsRouter.get("/attachments/:id/download", async (req, res) => {
         where: { userId: req.user!.id, deletedAt: null },
         select: { batchId: true },
       });
-      if (!student || student.batchId !== a.assignment.batchId) return null;
+      if (!student || !student.batchId) return null;
+      const access = await tx.assignmentBatchAccess.findFirst({
+        where: { assignmentId: a.assignmentId, batchId: student.batchId },
+      });
+      if (student.batchId !== a.assignment.batchId && !access) return null;
     }
 
     return a;
@@ -342,7 +384,14 @@ assignmentsRouter.post("/:id/open", async (req, res) => {
     if (!student || !student.batchId) return;
 
     const assignment = await tx.assignment.findFirst({
-      where: { id: req.params.id as string, deletedAt: null, batchId: student.batchId },
+      where: {
+        id: req.params.id as string,
+        deletedAt: null,
+        OR: [
+          { batchId: student.batchId },
+          { batchAccess: { some: { batchId: student.batchId } } },
+        ],
+      },
     });
     if (!assignment) return;
 
@@ -420,8 +469,11 @@ assignmentsRouter.post("/:id/submit", upload.array("files", 5), async (req, res)
       where: { userId: req.user!.id, deletedAt: null },
       select: { id: true, batchId: true },
     });
-    if (!student) throw Errors.forbidden("Student record not found");
-    if (student.batchId !== assignment.batchId) {
+    if (!student || !student.batchId) throw Errors.forbidden("Student record not found");
+    const access = await tx.assignmentBatchAccess.findFirst({
+      where: { assignmentId: assignment.id, batchId: student.batchId },
+    });
+    if (student.batchId !== assignment.batchId && !access) {
       throw Errors.forbidden("Assignment not in your batch");
     }
 

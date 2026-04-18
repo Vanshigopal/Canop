@@ -38,6 +38,20 @@ export async function enableRLS(prisma: PrismaClient): Promise<void> {
     "llm_configs",
     "llm_request_logs",
     "llm_spend_caps",
+    "study_materials",
+    "material_batch_access",
+    "material_access_logs",
+    "video_lectures",
+    "video_batch_access",
+    "video_watch_sessions",
+    "assignments",
+    "assignment_attachments",
+    "assignment_submissions",
+    "submission_files",
+    "dashboard_layouts",
+    "analytics_snapshots",
+    "export_jobs",
+    "assignment_batch_access",
   ];
 
   for (const table of tenantScopedTables) {

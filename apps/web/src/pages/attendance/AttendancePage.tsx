@@ -1,5 +1,6 @@
 import { Badge, Button } from "@/components/primitives";
 import { api } from "@/lib/api";
+import { Link } from "react-router-dom";
 import {
   CheckCircle2,
   Clock,
@@ -323,11 +324,19 @@ export function AttendancePage() {
 
   return (
     <div className="pb-10">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl tracking-tight">Attendance</h1>
-        <p className="text-text-muted text-sm mt-1">
-          Mark lectures, exams, and retests — per batch, per session.
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="font-display text-2xl tracking-tight">Attendance</h1>
+          <p className="text-text-muted text-sm mt-1">
+            Mark lectures, exams, and retests — per batch, per session.
+          </p>
+        </div>
+        <Link
+          to="/analytics/attendance"
+          className="text-xs font-medium text-indigo hover:underline"
+        >
+          View Attendance Analytics →
+        </Link>
       </div>
 
       {error && (

@@ -154,6 +154,39 @@ const AiAssistantPage = lazy(() =>
 const AnalyticsPage = lazy(() =>
   import("@/pages/analytics/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })),
 );
+const AttendanceAnalytics = lazy(() =>
+  import("@/pages/analytics/AttendanceAnalytics").then((m) => ({
+    default: m.AttendanceAnalytics,
+  })),
+);
+const AcademicAnalytics = lazy(() =>
+  import("@/pages/analytics/AcademicAnalytics").then((m) => ({
+    default: m.AcademicAnalytics,
+  })),
+);
+const FinancialAnalytics = lazy(() =>
+  import("@/pages/analytics/FinancialAnalytics").then((m) => ({
+    default: m.FinancialAnalytics,
+  })),
+);
+const EngagementAnalytics = lazy(() =>
+  import("@/pages/analytics/EngagementAnalytics").then((m) => ({
+    default: m.EngagementAnalytics,
+  })),
+);
+const BatchComparisonPage = lazy(() =>
+  import("@/pages/analytics/BatchComparisonPage").then((m) => ({
+    default: m.BatchComparisonPage,
+  })),
+);
+const ExportsPage = lazy(() =>
+  import("@/pages/analytics/ExportsPage").then((m) => ({ default: m.ExportsPage })),
+);
+const ClassesSettingsPage = lazy(() =>
+  import("@/pages/settings/ClassesSettingsPage").then((m) => ({
+    default: m.ClassesSettingsPage,
+  })),
+);
 const EventsPage = lazy(() =>
   import("@/pages/events/EventsPage").then((m) => ({ default: m.EventsPage })),
 );
@@ -341,6 +374,62 @@ export const router = createBrowserRouter([
         element: lazyPage(
           <RoleGuard roles={["ADMIN", "STAFF"]}>
             <AnalyticsPage />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "analytics/attendance",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN", "STAFF"]}>
+            <AttendanceAnalytics />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "analytics/academic",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN", "STAFF"]}>
+            <AcademicAnalytics />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "analytics/financial",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN", "STAFF"]}>
+            <FinancialAnalytics />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "analytics/engagement",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN", "STAFF"]}>
+            <EngagementAnalytics />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "analytics/compare",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN", "STAFF"]}>
+            <BatchComparisonPage />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "analytics/exports",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN", "STAFF"]}>
+            <ExportsPage />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "settings/classes",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN"]}>
+            <ClassesSettingsPage />
           </RoleGuard>,
         ),
       },

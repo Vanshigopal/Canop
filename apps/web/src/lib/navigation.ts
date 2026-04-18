@@ -80,6 +80,18 @@ export const adminNavigation: NavGroup[] = [
     ],
   },
   {
+    label: "Analytics",
+    items: [
+      { name: "Overview", path: "/analytics", icon: BarChart3 },
+      { name: "Attendance", path: "/analytics/attendance", icon: CheckSquare },
+      { name: "Academic", path: "/analytics/academic", icon: FileText },
+      { name: "Financial", path: "/analytics/financial", icon: IndianRupee },
+      { name: "Engagement", path: "/analytics/engagement", icon: Sparkles },
+      { name: "Compare", path: "/analytics/compare", icon: BarChart3 },
+      { name: "Exports", path: "/analytics/exports", icon: FolderOpen },
+    ],
+  },
+  {
     label: "Admin",
     items: [
       {

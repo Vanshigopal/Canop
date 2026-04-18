@@ -191,3 +191,35 @@ statsRouter.get("/overview", async (req, res) => {
     },
   });
 });
+
+statsRouter.get("/recent-activity", async (req, res) => {
+  const tenantId = req.user!.tenantId;
+  const items = await prisma.auditLog.findMany({
+    where: { tenantId },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: {
+      id: true,
+      action: true,
+      entity: true,
+      entityId: true,
+      createdAt: true,
+      user: { select: { name: true } },
+    },
+  });
+  const mapped = items.map((i) => ({
+    id: i.id,
+    title: formatActivity(i.action, i.entity, i.user?.name),
+    subtitle: i.entityId || null,
+    createdAt: i.createdAt.toISOString(),
+    type: i.entity,
+  }));
+  return ok(res, { recentItems: mapped });
+});
+
+function formatActivity(action: string, entity: string, who?: string | null) {
+  const verb = action.replace(/_/g, " ").toLowerCase();
+  const ent = entity.replace(/_/g, " ");
+  if (who) return `${who} ${verb} a ${ent}`;
+  return `${verb} ${ent}`;
+}

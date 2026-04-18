@@ -166,6 +166,12 @@ export function StudentsPage() {
           <h1 className="font-display text-2xl tracking-tight">Students</h1>
           <p className="text-text-muted text-sm mt-1">{total} enrolled</p>
         </div>
+        <Link
+          to="/analytics/engagement"
+          className="text-xs font-medium text-indigo hover:underline"
+        >
+          View Engagement Analytics →
+        </Link>
       </div>
 
       <div className="mb-4 flex gap-2 flex-wrap items-center">

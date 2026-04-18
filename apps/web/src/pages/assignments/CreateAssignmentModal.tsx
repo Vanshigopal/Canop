@@ -32,7 +32,7 @@ export function CreateAssignmentModal({ onClose, onCreated }: CreateAssignmentMo
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
-  const [batchId, setBatchId] = useState("");
+  const [batchIds, setBatchIds] = useState<string[]>([]);
   const [subjectId, setSubjectId] = useState("");
   const [deadline, setDeadline] = useState(toLocalDatetimeDefault(168));
   const [allowLate, setAllowLate] = useState(true);
@@ -58,8 +58,8 @@ export function CreateAssignmentModal({ onClose, onCreated }: CreateAssignmentMo
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!title.trim() || !batchId) {
-      setError("Title and batch required");
+    if (!title.trim() || batchIds.length === 0) {
+      setError("Title and at least one batch required");
       return;
     }
     setSubmitting(true);
@@ -68,7 +68,7 @@ export function CreateAssignmentModal({ onClose, onCreated }: CreateAssignmentMo
         title,
         description,
         instructions: instructions || undefined,
-        batchId,
+        batchIds,
         subjectId: subjectId || undefined,
         deadline: new Date(deadline).toISOString(),
         allowLateSubmission: allowLate,
@@ -136,22 +136,50 @@ export function CreateAssignmentModal({ onClose, onCreated }: CreateAssignmentMo
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">Batch *</label>
-              <select
-                value={batchId}
-                onChange={(e) => setBatchId(e.target.value)}
-                required
-                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
-              >
-                <option value="">—</option>
-                {batches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+              <label className="block text-xs font-medium text-text-muted mb-1">
+                Batches * ({batchIds.length} selected)
+              </label>
+              <div className="max-h-28 overflow-y-auto border border-border-soft rounded-md bg-white/70 p-2 space-y-1">
+                {batches.length === 0 ? (
+                  <p className="text-xs text-text-muted px-1">No batches yet</p>
+                ) : (
+                  batches.map((b) => (
+                    <label key={b.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={batchIds.includes(b.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setBatchIds([...batchIds, b.id]);
+                          else setBatchIds(batchIds.filter((id) => id !== b.id));
+                        }}
+                      />
+                      {b.name}
+                    </label>
+                  ))
+                )}
+              </div>
+              {batches.length > 0 && (
+                <div className="flex gap-2 mt-1 text-xs">
+                  <button
+                    type="button"
+                    className="text-indigo hover:underline"
+                    onClick={() => setBatchIds(batches.map((b) => b.id))}
+                  >
+                    Select all
+                  </button>
+                  {batchIds.length > 0 && (
+                    <button
+                      type="button"
+                      className="text-text-muted hover:underline"
+                      onClick={() => setBatchIds([])}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-text-muted mb-1">Subject</label>

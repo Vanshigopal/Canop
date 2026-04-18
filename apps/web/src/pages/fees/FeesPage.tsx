@@ -4,6 +4,7 @@ import { useSocket } from "@/hooks/useSocket";
 import { formatIndianCurrency } from "@/lib/indian-numbers";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, IndianRupee, Plus, TrendingUp, Users, Wallet } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -137,11 +138,19 @@ export function FeesPage() {
             Fee plans, installment schedules, payments, and collection reports
           </p>
         </div>
-        {tab === "plans" && (
-          <Button leftIcon={<Plus size={14} />} size="sm" onClick={() => setShowWizard(true)}>
-            Create Fee Plan
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          <Link
+            to="/analytics/financial"
+            className="text-xs font-medium text-indigo hover:underline"
+          >
+            View Financial Analytics →
+          </Link>
+          {tab === "plans" && (
+            <Button leftIcon={<Plus size={14} />} size="sm" onClick={() => setShowWizard(true)}>
+              Create Fee Plan
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

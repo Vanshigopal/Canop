@@ -28,6 +28,9 @@ import { intelligenceRouter } from "@/routes/intelligence";
 import { invitesRouter } from "@/routes/invites";
 import { joinRequestsRouter } from "@/routes/joinRequests";
 import { assignmentsRouter } from "@/routes/assignments";
+import { analyticsRouter } from "@/routes/analytics";
+import { dashboardConfigRouter } from "@/routes/dashboard-config";
+import { exportsRouter } from "@/routes/exports";
 import { llmConfigRouter } from "@/routes/llm-config";
 import { llmTestRouter } from "@/routes/llm-test";
 import { marksRouter } from "@/routes/marks";
@@ -113,6 +116,9 @@ app.use("/api/v1/ai", llmTestRouter);
 app.use("/api/v1/materials", materialsRouter);
 app.use("/api/v1/videos", videosRouter);
 app.use("/api/v1/assignments", assignmentsRouter);
+app.use("/api/v1/analytics", analyticsRouter);
+app.use("/api/v1/dashboard", dashboardConfigRouter);
+app.use("/api/v1/exports", exportsRouter);
 
 app.use(errorMiddleware);
 
