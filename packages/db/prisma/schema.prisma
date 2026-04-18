@@ -139,18 +139,20 @@ model Tenant {
   updatedAt    DateTime     @updatedAt @map("updated_at")
   deletedAt    DateTime?    @map("deleted_at")
 
-  users              User[]
-  auditLogs          AuditLog[]
-  subjects           Subject[]
-  classes            ClassStandard[]
-  batches            Batch[]
-  students           Student[]
-  inviteLinks        InviteLink[]
-  joinRequests       JoinRequest[]
-  attendanceSessions AttendanceSession[]
-  feeCategories      FeeCategory[]
-  feePlans           FeePlan[]
-  studentFees        StudentFee[]
+  users                 User[]
+  auditLogs             AuditLog[]
+  subjects              Subject[]
+  classes               ClassStandard[]
+  batches               Batch[]
+  students              Student[]
+  inviteLinks           InviteLink[]
+  joinRequests          JoinRequest[]
+  attendanceSessions    AttendanceSession[]
+  feeCategories         FeeCategory[]
+  feePlans              FeePlan[]
+  studentFees           StudentFee[]
+  notificationTemplates NotificationTemplate[]
+  broadcastCampaigns    BroadcastCampaign[]
 
   @@map("tenants")
 }
@@ -187,6 +189,9 @@ model User {
   markedAttendanceSessions AttendanceSession[] @relation("AttendanceMarker")
   markedAttendanceRecords  AttendanceRecord[]  @relation("AttendanceRecordMarker")
   collectedPayments        Payment[]           @relation("PaymentCollector")
+  broadcastCampaigns       BroadcastCampaign[]     @relation("BroadcastCreator")
+  notificationPreferences  NotificationPreference[]
+  consentRecords           ConsentRecord[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -726,4 +731,156 @@ model Payment {
   @@index([tenantId, status])
   @@index([razorpayOrderId])
   @@map("payments")
+}
+
+// ════════════════════════════════════════════════════════
+// COMMUNICATIONS
+// ════════════════════════════════════════════════════════
+
+enum NotificationChannel {
+  SMS
+  WHATSAPP
+  EMAIL
+  IN_APP
+}
+
+enum AudienceType {
+  ALL_STUDENTS
+  ALL_PARENTS
+  ALL_MEMBERS
+  BATCH
+  CLASS
+  CUSTOM
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  QUEUED
+  SENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  REJECTED
+}
+
+model NotificationTemplate {
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String              @map("tenant_id") @db.Uuid
+  name      String              @db.VarChar(100)
+  slug      String              @db.VarChar(100)
+  eventType String              @map("event_type") @db.VarChar(50)
+  channel   NotificationChannel
+  subject   String?             @db.VarChar(300)
+  body      String              @db.Text
+  isDefault Boolean             @default(false) @map("is_default")
+  isActive  Boolean             @default(true) @map("is_active")
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug, channel])
+  @@index([tenantId])
+  @@index([tenantId, eventType])
+  @@map("notification_templates")
+}
+
+model BroadcastCampaign {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String                @map("tenant_id") @db.Uuid
+  title          String                @db.VarChar(200)
+  message        String                @db.Text
+  channels       NotificationChannel[]
+  audienceType   AudienceType          @map("audience_type")
+  audienceFilter Json?                 @map("audience_filter")
+  recipientCount Int                   @default(0) @map("recipient_count")
+  sentCount      Int                   @default(0) @map("sent_count")
+  deliveredCount Int                   @default(0) @map("delivered_count")
+  failedCount    Int                   @default(0) @map("failed_count")
+  status         CampaignStatus        @default(DRAFT)
+  scheduledAt    DateTime?             @map("scheduled_at")
+  sentAt         DateTime?             @map("sent_at")
+  createdById    String                @map("created_by_id") @db.Uuid
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy  User              @relation("BroadcastCreator", fields: [createdById], references: [id])
+  deliveries MessageDelivery[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("broadcast_campaigns")
+}
+
+model MessageDelivery {
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String              @map("tenant_id") @db.Uuid
+  campaignId     String?             @map("campaign_id") @db.Uuid
+  recipientId    String              @map("recipient_id") @db.Uuid
+  recipientPhone String?             @map("recipient_phone") @db.VarChar(15)
+  recipientEmail String?             @map("recipient_email") @db.VarChar(255)
+  channel        NotificationChannel
+  eventType      String?             @map("event_type") @db.VarChar(50)
+  message        String              @db.Text
+  status         DeliveryStatus      @default(QUEUED)
+  providerRef    String?             @map("provider_ref") @db.VarChar(200)
+  errorMessage   String?             @map("error_message") @db.VarChar(500)
+  sentAt         DateTime?           @map("sent_at")
+  deliveredAt    DateTime?           @map("delivered_at")
+  readAt         DateTime?           @map("read_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+
+  campaign BroadcastCampaign? @relation(fields: [campaignId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, recipientId])
+  @@index([tenantId, eventType])
+  @@index([campaignId])
+  @@index([status])
+  @@map("message_deliveries")
+}
+
+model NotificationPreference {
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String              @map("tenant_id") @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  channel   NotificationChannel
+  eventType String              @map("event_type") @db.VarChar(50)
+  isEnabled Boolean             @default(true) @map("is_enabled")
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, eventType])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("notification_preferences")
+}
+
+model ConsentRecord {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String              @map("tenant_id") @db.Uuid
+  userId      String              @map("user_id") @db.Uuid
+  channel     NotificationChannel
+  consented   Boolean             @default(true)
+  consentedAt DateTime            @default(now()) @map("consented_at")
+  revokedAt   DateTime?           @map("revoked_at")
+  ipAddress   String?             @map("ip_address") @db.VarChar(45)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId, channel])
+  @@map("consent_records")
 }

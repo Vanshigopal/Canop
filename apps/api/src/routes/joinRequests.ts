@@ -4,6 +4,7 @@ import { emitToTenant } from "@/config/socket";
 import { Errors } from "@/lib/errors";
 import { ok, paginated } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
+import { notifySafe } from "@/services/notification.service";
 
 export const joinRequestsRouter = Router();
 
@@ -152,6 +153,35 @@ joinRequestsRouter.post("/:id/approve", async (req, res) => {
 
   emitToTenant(tenantId, "joinRequest:updated", { id: jr.id, status: "APPROVED" });
   emitToTenant(tenantId, "stats:updated", {});
+
+  if (result) {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true },
+    });
+    const base = {
+      student_name: result.user.name,
+      student_batch: result.batch?.name ?? "",
+      student_class: result.class?.name ?? "",
+      institute_name: tenant?.name ?? "",
+    };
+    void notifySafe({
+      tenantId,
+      eventType: "enrollment_approved",
+      recipientUserId: result.user.id,
+      context: base,
+    });
+    for (const g of result.guardians) {
+      if (!g.userId) continue;
+      void notifySafe({
+        tenantId,
+        eventType: "enrollment_approved_parent",
+        recipientUserId: g.userId,
+        context: { ...base, parent_name: g.name, parent_phone: g.phone },
+      });
+    }
+  }
+
   return ok(res, result);
 });
 

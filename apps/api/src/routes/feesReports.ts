@@ -3,6 +3,7 @@ import { emitToTenant } from "@/config/socket";
 import { computeLateFee } from "@/lib/fees";
 import { ok } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
+import { notifySafe } from "@/services/notification.service";
 import type { Prisma } from "@prisma/client";
 import { Router } from "express";
 
@@ -264,9 +265,121 @@ feesReportsRouter.post(
     if (result.upcomingToDue > 0 || result.dueToOverdue > 0) {
       emitToTenant(tenantId, "fees:status-refreshed", result);
     }
+
+    if (result.dueToOverdue > 0) {
+      void notifyOverdueParents(tenantId);
+    }
+
     return ok(res, result);
   },
 );
+
+feesReportsRouter.post(
+  "/remind/:installmentId",
+  requireRole("ADMIN", "TEACHER", "STAFF"),
+  async (req, res) => {
+    const tenantId = req.user!.tenantId;
+    const installmentId = req.params.installmentId as string;
+    const count = await sendInstallmentReminder(tenantId, installmentId);
+    return ok(res, { queued: count });
+  },
+);
+
+async function notifyOverdueParents(tenantId: string): Promise<void> {
+  const rows = await prisma.installment.findMany({
+    where: { tenantId, status: "OVERDUE" },
+    include: {
+      studentFee: {
+        include: {
+          student: {
+            include: {
+              user: { select: { name: true } },
+              guardians: { where: { userId: { not: null } }, orderBy: { isEmergency: "desc" } },
+            },
+          },
+        },
+      },
+    },
+  });
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } });
+  for (const r of rows) {
+    const base = overdueContext(r, tenant?.name ?? "");
+    const studentName = r.studentFee.student.user.name;
+    for (const g of r.studentFee.student.guardians) {
+      if (!g.userId) continue;
+      await notifySafe({
+        tenantId,
+        eventType: "fee_overdue",
+        recipientUserId: g.userId,
+        context: { ...base, student_name: studentName, parent_name: g.name, parent_phone: g.phone },
+      });
+    }
+    await prisma.installment.update({
+      where: { id: r.id },
+      data: { reminderSentAt: new Date() },
+    });
+  }
+}
+
+async function sendInstallmentReminder(tenantId: string, installmentId: string): Promise<number> {
+  const inst = await prisma.installment.findFirst({
+    where: { id: installmentId, tenantId },
+    include: {
+      studentFee: {
+        include: {
+          student: {
+            include: {
+              user: { select: { name: true } },
+              guardians: { where: { userId: { not: null } }, orderBy: { isEmergency: "desc" } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!inst) return 0;
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } });
+  const base = overdueContext(inst, tenant?.name ?? "");
+  const studentName = inst.studentFee.student.user.name;
+  const eventType = inst.status === "OVERDUE" ? "fee_overdue" : "fee_reminder";
+  let sent = 0;
+  for (const g of inst.studentFee.student.guardians) {
+    if (!g.userId) continue;
+    await notifySafe({
+      tenantId,
+      eventType,
+      recipientUserId: g.userId,
+      context: { ...base, student_name: studentName, parent_name: g.name, parent_phone: g.phone },
+    });
+    sent += 1;
+  }
+  await prisma.installment.update({ where: { id: inst.id }, data: { reminderSentAt: new Date() } });
+  return sent;
+}
+
+function overdueContext(
+  row: {
+    amount: unknown;
+    dueDate: Date;
+    installmentNumber: number;
+    studentFee: { pendingAmount: unknown };
+  },
+  tenantName: string,
+): Record<string, string> {
+  const fmt = (n: number) => new Intl.NumberFormat("en-IN").format(n);
+  return {
+    fee_amount: fmt(Number(row.amount)),
+    fee_due_date: row.dueDate.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    }),
+    fee_pending: fmt(Number(row.studentFee.pendingAmount)),
+    installment_number: row.installmentNumber.toString(),
+    institute_name: tenantName,
+  };
+}
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;

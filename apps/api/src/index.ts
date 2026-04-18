@@ -12,7 +12,9 @@ import { tenantMiddleware } from "@/middleware/tenant";
 import { attendanceRouter } from "@/routes/attendance";
 import { authRouter } from "@/routes/auth";
 import { batchesRouter } from "@/routes/batches";
+import { broadcastsRouter } from "@/routes/broadcasts";
 import { classesRouter } from "@/routes/classes";
+import { deliveriesRouter } from "@/routes/deliveries";
 import { enrollmentRouter } from "@/routes/enrollment";
 import { feeCategoriesRouter } from "@/routes/feeCategories";
 import { feePlansRouter } from "@/routes/feePlans";
@@ -20,6 +22,7 @@ import { feesReportsRouter } from "@/routes/feesReports";
 import { healthRouter } from "@/routes/health";
 import { invitesRouter } from "@/routes/invites";
 import { joinRequestsRouter } from "@/routes/joinRequests";
+import { notificationConfigRouter } from "@/routes/notificationConfig";
 import { parentFeesRouter } from "@/routes/parentFees";
 import { paymentsRouter } from "@/routes/payments";
 import { statsRouter } from "@/routes/stats";
@@ -27,7 +30,9 @@ import { studentFeesRouter } from "@/routes/studentFees";
 import { studentsRouter } from "@/routes/students";
 import { subjectsRouter } from "@/routes/subjects";
 import { teachersRouter } from "@/routes/teachers";
+import { templatesRouter } from "@/routes/templates";
 import { tenantRouter } from "@/routes/tenant";
+import { webhooksRouter } from "@/routes/webhooks";
 
 const app = express();
 
@@ -37,6 +42,9 @@ app.use(compression());
 app.use(express.json({ limit: "1mb" }));
 
 app.use("/health", healthRouter);
+
+// Webhooks — external callers, no tenant resolution
+app.use("/api/v1/webhooks", webhooksRouter);
 
 app.use("/api/v1", tenantMiddleware);
 
@@ -58,6 +66,10 @@ app.use("/api/v1/student-fees", studentFeesRouter);
 app.use("/api/v1/payments", paymentsRouter);
 app.use("/api/v1/fees", feesReportsRouter);
 app.use("/api/v1/parent", parentFeesRouter);
+app.use("/api/v1/templates", templatesRouter);
+app.use("/api/v1/broadcasts", broadcastsRouter);
+app.use("/api/v1/deliveries", deliveriesRouter);
+app.use("/api/v1/notification-config", notificationConfigRouter);
 
 app.use(errorMiddleware);
 

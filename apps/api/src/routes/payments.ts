@@ -7,6 +7,7 @@ import { buildReceiptNumber, computeLateFee } from "@/lib/fees";
 import { ok, paginated } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
+import { notifySafe } from "@/services/notification.service";
 import type { Prisma } from "@prisma/client";
 import { RazorpayOrderSchema, RazorpayVerifySchema, RecordPaymentSchema } from "@raquel/types";
 import { Router } from "express";
@@ -20,6 +21,58 @@ const razorpayClient =
   env.RAZORPAY_KEY_ID.startsWith("rzp_") && env.RAZORPAY_KEY_SECRET.length > 10
     ? new Razorpay({ key_id: env.RAZORPAY_KEY_ID, key_secret: env.RAZORPAY_KEY_SECRET })
     : null;
+
+async function notifyPaymentReceived(
+  tenantId: string,
+  paymentId: string,
+  tenantName: string,
+): Promise<void> {
+  const payment = await prisma.payment.findFirst({
+    where: { id: paymentId, tenantId },
+    include: {
+      studentFee: {
+        include: {
+          student: {
+            include: {
+              user: { select: { name: true } },
+              guardians: { where: { userId: { not: null } }, orderBy: { isEmergency: "desc" } },
+            },
+          },
+        },
+      },
+      installment: true,
+    },
+  });
+  if (!payment) return;
+
+  const studentName = payment.studentFee.student.user.name;
+  const formatAmount = (n: number) => new Intl.NumberFormat("en-IN").format(n);
+  const today = new Date();
+  const base: Record<string, string> = {
+    student_name: studentName,
+    fee_amount: formatAmount(Number(payment.amount)),
+    fee_paid: formatAmount(Number(payment.amount)),
+    receipt_number: payment.receiptNumber ?? "",
+    fee_pending: formatAmount(Number(payment.studentFee.pendingAmount)),
+    installment_number: payment.installment?.installmentNumber.toString() ?? "",
+    institute_name: tenantName,
+    date: today.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }),
+  };
+
+  for (const g of payment.studentFee.student.guardians) {
+    if (!g.userId) continue;
+    await notifySafe({
+      tenantId,
+      eventType: "fee_paid",
+      recipientUserId: g.userId,
+      context: { ...base, parent_name: g.name, parent_phone: g.phone },
+    });
+  }
+}
 
 async function nextReceiptNumber(
   tx: Prisma.TransactionClient,
@@ -239,6 +292,8 @@ paymentsRouter.post(
       `[fee-paid] ${fee.student.user.name} — ₹${rupees} via ${body.method}  (receipt ${payment.receiptNumber})`,
     );
 
+    void notifyPaymentReceived(tenantId, payment.id, tenant?.name ?? "");
+
     return ok(res, payment, 201);
   },
 );
@@ -371,6 +426,8 @@ paymentsRouter.post("/razorpay/verify", validate(RazorpayVerifySchema), async (r
   console.log(
     `[fee-paid] online — ₹${rupees} via RAZORPAY  (receipt ${updatedPayment.receiptNumber})`,
   );
+
+  void notifyPaymentReceived(tenantId, updatedPayment.id, tenant?.name ?? "");
 
   return ok(res, {
     paymentId: updatedPayment.id,

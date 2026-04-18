@@ -12,6 +12,9 @@ const EnvSchema = z.object({
   OTP_TTL: z.coerce.number().default(300),
   RAZORPAY_KEY_ID: z.string().default("rzp_test_placeholder"),
   RAZORPAY_KEY_SECRET: z.string().default("placeholder_secret"),
+  GUPSHUP_API_KEY: z.string().default(""),
+  GUPSHUP_APP_NAME: z.string().default(""),
+  GUPSHUP_SENDER_ID: z.string().default(""),
 });
 
 export const env = EnvSchema.parse(process.env);

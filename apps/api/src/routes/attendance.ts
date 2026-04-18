@@ -12,6 +12,7 @@ import {
 import { created, ok, paginated } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
+import { notifySafe } from "@/services/notification.service";
 import { Prisma } from "@prisma/client";
 import {
   AddGuestStudentSchema,
@@ -73,6 +74,51 @@ function clientDeviceInfo(req: {
   const ua = (req.headers["user-agent"] as string | undefined)?.slice(0, 500) ?? null;
   const ip = ((req.ip ?? req.socket?.remoteAddress ?? "") as string).slice(0, 45) || null;
   return { deviceInfo: ua, ipAddress: ip };
+}
+
+function ddmmyyyy(d: Date): string {
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
+}
+
+async function notifyAbsentee(
+  tenantId: string,
+  studentId: string,
+  sessionId: string,
+  tenantName: string,
+): Promise<void> {
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, tenantId, deletedAt: null },
+    include: {
+      user: { select: { name: true } },
+      batch: { select: { name: true } },
+      guardians: { where: { userId: { not: null } }, orderBy: { isEmergency: "desc" } },
+    },
+  });
+  if (!student) return;
+  const session = await prisma.attendanceSession.findFirst({
+    where: { id: sessionId, tenantId },
+    include: { subject: { select: { name: true } } },
+  });
+  if (!session) return;
+
+  const base: Record<string, string> = {
+    student_name: student.user.name,
+    student_batch: student.batch?.name ?? "",
+    attendance_date: ddmmyyyy(session.date),
+    attendance_status: "Absent",
+    subject_name: session.subject?.name ?? "",
+    institute_name: tenantName,
+  };
+
+  for (const g of student.guardians) {
+    if (!g.userId) continue;
+    await notifySafe({
+      tenantId,
+      eventType: "attendance_absent",
+      recipientUserId: g.userId,
+      context: { ...base, parent_name: g.name, parent_phone: g.phone },
+    });
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -332,6 +378,15 @@ attendanceRouter.post(
       batchId: session.batchId,
     });
     emitToTenant(tenantId, "stats:updated", {});
+
+    if (body.status === "ABSENT") {
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { name: true },
+      });
+      void notifyAbsentee(tenantId, body.studentId, session.id, tenant?.name ?? "");
+    }
+
     return ok(res, record);
   },
 );
@@ -377,6 +432,18 @@ attendanceRouter.post(
       count: records.length,
     });
     emitToTenant(tenantId, "stats:updated", {});
+
+    const absentIds = body.records.filter((r) => r.status === "ABSENT").map((r) => r.studentId);
+    if (absentIds.length > 0) {
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { name: true },
+      });
+      for (const studentId of absentIds) {
+        void notifyAbsentee(tenantId, studentId, session.id, tenant?.name ?? "");
+      }
+    }
+
     return ok(res, records);
   },
 );
@@ -436,6 +503,17 @@ attendanceRouter.post(
       count: records.length,
     });
     emitToTenant(tenantId, "stats:updated", {});
+
+    if (body.status === "ABSENT" && students.length > 0) {
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { name: true },
+      });
+      for (const s of students) {
+        void notifyAbsentee(tenantId, s.id, session.id, tenant?.name ?? "");
+      }
+    }
+
     return ok(res, { marked: records.length, records: full });
   },
 );

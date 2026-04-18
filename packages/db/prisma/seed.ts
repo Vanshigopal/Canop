@@ -659,6 +659,169 @@ async function main() {
   });
   console.log("[seed] Fee plan + 4 installments + 1 cash payment for Sneha");
 
+  // ── Communications: default templates ──
+  const defaultTemplates: Array<{
+    name: string;
+    slug: string;
+    eventType: string;
+    channel: "SMS" | "WHATSAPP" | "EMAIL" | "IN_APP";
+    subject?: string;
+    body: string;
+  }> = [
+    {
+      name: "Absent Notification",
+      slug: "attendance_absent",
+      eventType: "attendance_absent",
+      channel: "WHATSAPP",
+      body: "Dear {parent_name}, your child {student_name} was marked absent today ({attendance_date}) at {institute_name}. If this is incorrect, please contact the institute.",
+    },
+    {
+      name: "Absent Notification (SMS)",
+      slug: "attendance_absent_sms",
+      eventType: "attendance_absent",
+      channel: "SMS",
+      body: "{student_name} was absent on {attendance_date} at {institute_name}. Contact institute if incorrect.",
+    },
+    {
+      name: "Fee Payment Receipt",
+      slug: "fee_paid",
+      eventType: "fee_paid",
+      channel: "WHATSAPP",
+      body: "Dear {parent_name}, payment of Rs.{fee_amount} received for {student_name}. Receipt: {receipt_number}. Pending: Rs.{fee_pending}. Thank you! — {institute_name}",
+    },
+    {
+      name: "Fee Reminder",
+      slug: "fee_reminder",
+      eventType: "fee_reminder",
+      channel: "WHATSAPP",
+      body: "Dear {parent_name}, installment #{installment_number} of Rs.{fee_amount} for {student_name} is due on {fee_due_date}. Please pay on time to avoid late fees. — {institute_name}",
+    },
+    {
+      name: "Fee Overdue",
+      slug: "fee_overdue",
+      eventType: "fee_overdue",
+      channel: "WHATSAPP",
+      body: "Dear {parent_name}, installment #{installment_number} of Rs.{fee_amount} for {student_name} is overdue. Due was {fee_due_date}. Total pending: Rs.{fee_pending}. Please pay at the earliest. — {institute_name}",
+    },
+    {
+      name: "Enrollment Approved",
+      slug: "enrollment_approved",
+      eventType: "enrollment_approved",
+      channel: "WHATSAPP",
+      body: "Welcome to {institute_name}! Your enrollment has been approved. You can now login using your phone number. Batch: {student_batch}.",
+    },
+    {
+      name: "Enrollment Approved (Parent)",
+      slug: "enrollment_approved_parent",
+      eventType: "enrollment_approved_parent",
+      channel: "WHATSAPP",
+      body: "Dear {parent_name}, {student_name} has been enrolled at {institute_name}. You can login with your phone number to track attendance, marks, and fees.",
+    },
+    {
+      name: "Marks Published",
+      slug: "marks_published",
+      eventType: "marks_published",
+      channel: "WHATSAPP",
+      body: "Dear {parent_name}, {exam_name} results are out. {student_name} scored {marks}/{total_marks} ({percentage}%) in {subject_name}. — {institute_name}",
+    },
+    {
+      name: "Teacher Welcome",
+      slug: "teacher_welcome",
+      eventType: "teacher_welcome",
+      channel: "EMAIL",
+      subject: "Welcome to {institute_name}",
+      body: "Welcome to {institute_name}! Your account has been created. Login at your institute's Raquel portal to get started.",
+    },
+  ];
+
+  for (const t of defaultTemplates) {
+    await prisma.notificationTemplate.upsert({
+      where: {
+        tenantId_slug_channel: { tenantId: demoTenant.id, slug: t.slug, channel: t.channel },
+      },
+      update: { body: t.body, subject: t.subject ?? null },
+      create: {
+        tenantId: demoTenant.id,
+        name: t.name,
+        slug: t.slug,
+        eventType: t.eventType,
+        channel: t.channel,
+        subject: t.subject ?? null,
+        body: t.body,
+        isDefault: true,
+      },
+    });
+  }
+  console.log(`[seed] ${defaultTemplates.length} default notification templates`);
+
+  // ── Consent records (all seeded users consented) ──
+  const consentUsers = [demoAdmin.id, demoTeacher.id, demoParent.id, demoStudent.id, demoStudent2.id];
+  const consentChannels: Array<"SMS" | "WHATSAPP" | "EMAIL"> = ["SMS", "WHATSAPP", "EMAIL"];
+  for (const uid of consentUsers) {
+    for (const ch of consentChannels) {
+      const existing = await prisma.consentRecord.findFirst({
+        where: { tenantId: demoTenant.id, userId: uid, channel: ch },
+      });
+      if (!existing) {
+        await prisma.consentRecord.create({
+          data: { tenantId: demoTenant.id, userId: uid, channel: ch, consented: true },
+        });
+      }
+    }
+  }
+  console.log(`[seed] Consent records for ${consentUsers.length} users × ${consentChannels.length} channels`);
+
+  // ── Sample broadcast campaign (already sent) ──
+  const sampleCampaign = await prisma.broadcastCampaign.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000200" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000200",
+      tenantId: demoTenant.id,
+      title: "Holiday Notice",
+      message:
+        "Dear {parent_name}, tomorrow is a holiday at {institute_name}. No classes for {student_batch}. Stay safe!",
+      channels: ["WHATSAPP", "SMS"],
+      audienceType: "ALL_PARENTS",
+      recipientCount: 3,
+      sentCount: 3,
+      deliveredCount: 3,
+      status: "SENT",
+      sentAt: new Date(),
+      createdById: demoAdmin.id,
+    },
+  });
+
+  // Sample deliveries for the campaign
+  const parents = await prisma.guardian.findMany({
+    where: { tenantId: demoTenant.id, userId: { not: null } },
+    include: { user: { select: { id: true, phone: true } } },
+    take: 3,
+  });
+  for (const g of parents) {
+    if (!g.userId) continue;
+    const existing = await prisma.messageDelivery.findFirst({
+      where: { campaignId: sampleCampaign.id, recipientId: g.userId, channel: "WHATSAPP" },
+    });
+    if (!existing) {
+      await prisma.messageDelivery.create({
+        data: {
+          tenantId: demoTenant.id,
+          campaignId: sampleCampaign.id,
+          recipientId: g.userId,
+          recipientPhone: g.phone,
+          channel: "WHATSAPP",
+          message: `Dear ${g.name}, tomorrow is a holiday at Demo Institute. Stay safe!`,
+          status: "DELIVERED",
+          providerRef: `stub-seed-${Date.now()}`,
+          sentAt: new Date(),
+          deliveredAt: new Date(),
+        },
+      });
+    }
+  }
+  console.log(`[seed] Sample broadcast "${sampleCampaign.title}" with ${parents.length} deliveries`);
+
   console.log("[seed] Done.");
 }
 

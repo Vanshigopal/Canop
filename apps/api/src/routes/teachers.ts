@@ -7,6 +7,7 @@ import { Errors } from "@/lib/errors";
 import { ok, created } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
+import { notifySafe } from "@/services/notification.service";
 
 export const teachersRouter = Router();
 
@@ -58,6 +59,24 @@ teachersRouter.post("/", validate(CreateTeacherSchema), async (req, res) => {
   });
 
   console.log(`[teacher-created] ${email} / ${password}`);
+
+  if (teacher) {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true },
+    });
+    void notifySafe({
+      tenantId,
+      eventType: "teacher_welcome",
+      recipientUserId: teacher.id,
+      context: {
+        tutor_name: teacher.name,
+        institute_name: tenant?.name ?? "",
+      },
+      channels: ["EMAIL"],
+    });
+  }
+
   return created(res, teacher);
 });
 
