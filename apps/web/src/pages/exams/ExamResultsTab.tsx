@@ -4,6 +4,7 @@ import { Send, TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { ExamRow } from "./ExamsPage";
+import { QuestionAnalysisSection } from "./QuestionAnalysisSection";
 
 interface Analysis {
   exam: { id: string; name: string; type: string; totalMarks: number; status: string };
@@ -237,6 +238,11 @@ export function ExamResultsTab({
               </table>
             </div>
           </div>
+
+          {(analysis.exam.type === "MCQ" ||
+            analysis.exam.type === "THEORY_MCQ") && (
+            <QuestionAnalysisSection examId={analysis.exam.id} />
+          )}
         </>
       )}
     </div>

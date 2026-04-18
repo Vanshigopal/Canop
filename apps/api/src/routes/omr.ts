@@ -75,6 +75,32 @@ omrRouter.post("/scan", upload.single("file"), async (req, res) => {
       answerKey,
     });
 
+    // Always persist per-question responses for E3 IRT analysis
+    const responsesWithCorrectness = result.responses.map((r) => ({
+      question_number: r.question_number,
+      selected_option: r.selected_option,
+      confidence: r.confidence,
+      is_correct: r.selected_option === answerKey[r.question_number],
+    }));
+
+    await withTenantTransaction(prisma, tenantId, async (tx) => {
+      await tx.omrScanResult.upsert({
+        where: { examId_studentId: { examId, studentId } },
+        update: {
+          responses: responsesWithCorrectness,
+          scannedAt: new Date(),
+          scannedById: req.user!.id,
+        },
+        create: {
+          tenantId,
+          examId,
+          studentId,
+          responses: responsesWithCorrectness,
+          scannedById: req.user!.id,
+        },
+      });
+    });
+
     if (!result.needs_review) {
       const percentage =
         (result.score / Number(exam.totalMarks)) * 100;

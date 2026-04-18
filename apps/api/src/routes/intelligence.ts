@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { prisma } from "@/config/db";
+import { prisma, withTenantTransaction } from "@/config/db";
 import {
   detectAttendanceAnomalies,
   detectLoginDropOff,
@@ -10,7 +10,6 @@ import {
   getAtRiskStudents,
   predictPaymentReliability,
   listFeeRisks,
-  getQuestionStats,
 } from "@/lib/algorithms";
 import { Errors } from "@/lib/errors";
 import { ok } from "@/lib/response";
@@ -183,9 +182,150 @@ intelligenceRouter.get("/fee-reminder-offsets", requireRole("ADMIN"), async (req
   return ok(res, rows);
 });
 
+/**
+ * E3 — Real IRT-style per-question statistics from OMR scan data.
+ * Classical test theory: difficulty = 1 - p(correct); discrimination = top27% - bottom27%.
+ */
 intelligenceRouter.get("/question-stats/:examId", async (req, res) => {
   const tenantId = req.user!.tenantId;
   const examId = req.params.examId as string;
-  const result = await getQuestionStats(tenantId, examId);
-  return ok(res, result);
+
+  const exam = await prisma.exam.findFirst({
+    where: { id: examId, tenantId, deletedAt: null },
+    select: {
+      id: true,
+      type: true,
+      totalQuestions: true,
+      status: true,
+    },
+  });
+  if (!exam) throw Errors.notFound("Exam");
+
+  if (exam.type !== "MCQ" && exam.type !== "THEORY_MCQ") {
+    return ok(res, {
+      available: false,
+      reason: "Question-level analysis only available for MCQ exams",
+    });
+  }
+
+  const scanResults = await withTenantTransaction(prisma, tenantId, (tx) =>
+    tx.omrScanResult.findMany({
+      where: { examId },
+      select: { responses: true },
+    }),
+  );
+
+  if (scanResults.length < 5) {
+    return ok(res, {
+      available: false,
+      reason: `Need at least 5 OMR-scanned sheets for analysis (currently ${scanResults.length}).`,
+      sampleSize: scanResults.length,
+    });
+  }
+
+  const totalQs = exam.totalQuestions ?? 0;
+
+  type Resp = {
+    question_number: number;
+    selected_option: number | null;
+    is_correct: boolean;
+  };
+
+  // Per-question aggregate counts
+  const questionStats = new Map<
+    number,
+    { correct: number; incorrect: number; skipped: number; total: number }
+  >();
+  for (let i = 1; i <= totalQs; i++) {
+    questionStats.set(i, { correct: 0, incorrect: 0, skipped: 0, total: 0 });
+  }
+
+  // Per-scan total score (for top/bottom 27% split)
+  const scoresPerScan: Array<{ idx: number; score: number }> = [];
+
+  scanResults.forEach((scan, idx) => {
+    const responses = (scan.responses as unknown as Resp[]) ?? [];
+    let correct = 0;
+    for (const r of responses) {
+      const stat = questionStats.get(r.question_number);
+      if (!stat) continue;
+      stat.total += 1;
+      if (r.selected_option === null) stat.skipped += 1;
+      else if (r.is_correct) {
+        stat.correct += 1;
+        correct += 1;
+      } else stat.incorrect += 1;
+    }
+    scoresPerScan.push({ idx, score: correct });
+  });
+
+  scoresPerScan.sort((a, b) => b.score - a.score);
+  const topSize = Math.max(1, Math.floor(scoresPerScan.length * 0.27));
+  const topGroup = new Set(scoresPerScan.slice(0, topSize).map((s) => s.idx));
+  const bottomGroup = new Set(
+    scoresPerScan.slice(-topSize).map((s) => s.idx),
+  );
+
+  const questions: Array<{
+    questionNumber: number;
+    correctCount: number;
+    incorrectCount: number;
+    skippedCount: number;
+    totalResponses: number;
+    difficulty: number;
+    discrimination: number;
+    quality: "excellent" | "good" | "fair" | "poor";
+  }> = [];
+
+  for (let qNum = 1; qNum <= totalQs; qNum++) {
+    const stat = questionStats.get(qNum)!;
+    const difficulty =
+      stat.total > 0 ? 1 - stat.correct / stat.total : 0.5;
+
+    let topCorrect = 0;
+    let bottomCorrect = 0;
+    scanResults.forEach((scan, idx) => {
+      const responses = (scan.responses as unknown as Resp[]) ?? [];
+      const r = responses.find((x) => x.question_number === qNum);
+      if (!r) return;
+      if (topGroup.has(idx) && r.is_correct) topCorrect += 1;
+      if (bottomGroup.has(idx) && r.is_correct) bottomCorrect += 1;
+    });
+    const topRate = topCorrect / Math.max(1, topSize);
+    const bottomRate = bottomCorrect / Math.max(1, topSize);
+    const discrimination = topRate - bottomRate;
+
+    let quality: "excellent" | "good" | "fair" | "poor";
+    if (
+      discrimination >= 0.4 &&
+      difficulty >= 0.2 &&
+      difficulty <= 0.8
+    )
+      quality = "excellent";
+    else if (
+      discrimination >= 0.2 &&
+      difficulty >= 0.15 &&
+      difficulty <= 0.85
+    )
+      quality = "good";
+    else if (discrimination >= 0.1) quality = "fair";
+    else quality = "poor";
+
+    questions.push({
+      questionNumber: qNum,
+      correctCount: stat.correct,
+      incorrectCount: stat.incorrect,
+      skippedCount: stat.skipped,
+      totalResponses: stat.total,
+      difficulty: Math.round(difficulty * 1000) / 1000,
+      discrimination: Math.round(discrimination * 1000) / 1000,
+      quality,
+    });
+  }
+
+  return ok(res, {
+    available: true,
+    sampleSize: scanResults.length,
+    questions,
+  });
 });
