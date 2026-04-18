@@ -4,6 +4,7 @@ import { prisma, withTenantTransaction } from "@/config/db";
 import { emitToTenant } from "@/config/socket";
 import { Errors } from "@/lib/errors";
 import { ok, paginated } from "@/lib/response";
+import { trackRecentItem } from "@/lib/search/recency";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
 
@@ -75,6 +76,7 @@ studentsRouter.get("/:id", async (req, res) => {
     },
   });
   if (!student) throw Errors.notFound("Student");
+  void trackRecentItem(req.user!.tenantId, req.user!.id, "student", id).catch(() => {});
   return ok(res, student);
 });
 

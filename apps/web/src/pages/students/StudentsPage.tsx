@@ -1,5 +1,6 @@
 import { Badge, Button, Input } from "@/components/primitives";
 import { api } from "@/lib/api";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { ChevronDown, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -46,10 +47,12 @@ export function StudentsPage() {
     }
   }
 
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   useEffect(() => {
-    load(search, filterBatchId);
+    load(debouncedSearch, filterBatchId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterBatchId]);
+  }, [debouncedSearch, filterBatchId]);
 
   useEffect(() => {
     api.get("/api/v1/batches").then((r) => {

@@ -185,6 +185,8 @@ model Tenant {
   notificationTemplates NotificationTemplate[]
   broadcastCampaigns    BroadcastCampaign[]
   exams                 Exam[]
+  recentItems           RecentItem[]
+  engagementSnapshots   EngagementSnapshot[]
 
   @@map("tenants")
 }
@@ -229,6 +231,7 @@ model User {
   enteredMarks             MarkEntry[]             @relation("MarkEnterer")
   confirmedRetests         Retest[]                @relation("RetestConfirmer")
   enteredRetestMarks       Retest[]                @relation("RetestMarksEnterer")
+  recentItems              RecentItem[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -434,16 +437,17 @@ model Student {
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
 
-  tenant             Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  batch              Batch?         @relation(fields: [batchId], references: [id])
-  class              ClassStandard? @relation(fields: [classId], references: [id])
-  guardians          Guardian[]
-  attendanceRecords  AttendanceRecord[]
-  batches            StudentBatch[]
-  fees               StudentFee[]
-  markEntries        MarkEntry[]
-  retests            Retest[]
+  tenant               Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batch                Batch?         @relation(fields: [batchId], references: [id])
+  class                ClassStandard? @relation(fields: [classId], references: [id])
+  guardians            Guardian[]
+  attendanceRecords    AttendanceRecord[]
+  batches              StudentBatch[]
+  fees                 StudentFee[]
+  markEntries          MarkEntry[]
+  retests              Retest[]
+  engagementSnapshots  EngagementSnapshot[]
 
   @@index([tenantId])
   @@index([tenantId, batchId])
@@ -1077,4 +1081,62 @@ model Retest {
   @@index([tenantId, status])
   @@index([tenantId, scheduledDate])
   @@map("retests")
+}
+
+// ════════════════════════════════════════════════════════
+// INTELLIGENCE TRACKING (Session 10A)
+// ════════════════════════════════════════════════════════
+
+model RecentItem {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String     @map("tenant_id") @db.Uuid
+  userId      String     @map("user_id") @db.Uuid
+  entityType  String     @map("entity_type") @db.VarChar(30)
+  entityId    String     @map("entity_id") @db.Uuid
+  viewCount   Int        @default(1) @map("view_count")
+  lastViewed  DateTime   @default(now()) @map("last_viewed")
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId])
+  @@index([tenantId])
+  @@index([userId, entityType, lastViewed])
+  @@map("recent_items")
+}
+
+model MessageDedupKey {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String     @map("tenant_id") @db.Uuid
+  hashKey     String     @unique @map("hash_key") @db.VarChar(64)
+  expiresAt   DateTime   @map("expires_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@index([expiresAt])
+  @@map("message_dedup_keys")
+}
+
+model EngagementSnapshot {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  studentId          String    @map("student_id") @db.Uuid
+  score              Decimal   @db.Decimal(5, 2)
+  attendanceScore    Decimal   @map("attendance_score") @db.Decimal(5, 2)
+  marksScore         Decimal   @map("marks_score") @db.Decimal(5, 2)
+  assignmentScore    Decimal   @map("assignment_score") @db.Decimal(5, 2)
+  videoScore         Decimal   @map("video_score") @db.Decimal(5, 2)
+  loginScore         Decimal   @map("login_score") @db.Decimal(5, 2)
+  riskFactors        Json
+  snapshotDate       DateTime  @map("snapshot_date") @db.Date
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student            Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, snapshotDate])
+  @@index([tenantId])
+  @@index([tenantId, snapshotDate])
+  @@index([tenantId, score])
+  @@map("engagement_snapshots")
 }

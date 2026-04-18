@@ -2,6 +2,7 @@ import { Badge, Button } from "@/components/primitives";
 import { api } from "@/lib/api";
 import { useSocket } from "@/hooks/useSocket";
 import { useAuthStore } from "@/stores/auth";
+import { formatIndianCurrency } from "@/lib/indian-numbers";
 import { AlertCircle, Check, Clock, IndianRupee, Receipt as ReceiptIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -97,6 +98,17 @@ function FeeCard({
   canPay: boolean;
   onPaid: () => void;
 }) {
+  const [risk, setRisk] = useState<{
+    probability: number;
+    confidence: "low" | "medium" | "high";
+  } | null>(null);
+
+  useEffect(() => {
+    api
+      .get(`/api/v1/intelligence/fee-risk/${fee.id}`)
+      .then((r) => setRisk(r.data?.data ?? null))
+      .catch(() => setRisk(null));
+  }, [fee.id]);
   const total = Number(fee.totalAmount);
   const paid = Number(fee.paidAmount);
   const pending = Number(fee.pendingAmount);
@@ -111,7 +123,10 @@ function FeeCard({
             {fee.plan.batch.name} · AY {fee.plan.academicYear}
           </div>
         </div>
-        <FeeStatusBadge status={fee.status} />
+        <div className="flex items-center gap-2">
+          <FeeStatusBadge status={fee.status} />
+          <PaymentRiskBadge risk={risk} />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-3">
@@ -380,5 +395,37 @@ function InstallmentBadge({ status }: { status: string }) {
 function money(n: string | number): string {
   const v = typeof n === "string" ? Number(n) : n;
   if (Number.isNaN(v)) return "—";
-  return `₹${new Intl.NumberFormat("en-IN").format(v)}`;
+  return formatIndianCurrency(v);
+}
+
+function PaymentRiskBadge({
+  risk,
+}: {
+  risk: { probability: number; confidence: "low" | "medium" | "high" } | null;
+}) {
+  if (!risk) return null;
+  const riskScore = 1 - risk.probability;
+  let tone: "success" | "warning" | "danger" = "success";
+  let label = "Low payment risk";
+  if (riskScore >= 0.6) {
+    tone = "danger";
+    label = "High payment risk";
+  } else if (riskScore >= 0.35) {
+    tone = "warning";
+    label = "Medium risk";
+  }
+  return (
+    <span
+      title={`Based on past payments · confidence: ${risk.confidence}`}
+      className={
+        tone === "success"
+          ? "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-2xs font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200"
+          : tone === "warning"
+            ? "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-2xs font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200"
+            : "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-2xs font-semibold uppercase tracking-wider bg-red-100 text-red-800 border border-red-200"
+      }
+    >
+      {label}
+    </span>
+  );
 }

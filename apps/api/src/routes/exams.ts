@@ -2,6 +2,7 @@ import { prisma, withTenantTransaction } from "@/config/db";
 import { emitToTenant } from "@/config/socket";
 import { Errors } from "@/lib/errors";
 import { created, ok } from "@/lib/response";
+import { trackRecentItem } from "@/lib/search/recency";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
 import { Prisma } from "@prisma/client";
@@ -66,7 +67,7 @@ examsRouter.get("/", async (req, res) => {
 // ── Suggest date (B4 algorithm) — MUST come before /:id routes ──
 examsRouter.get("/suggest-date", async (req, res) => {
   const tenantId = req.user!.tenantId;
-  const { batchId } = req.query as Record<string, string | undefined>;
+  const { batchId, subjectId } = req.query as Record<string, string | undefined>;
   if (!batchId) throw Errors.badRequest("batchId query param required");
 
   const today = new Date();
@@ -74,7 +75,7 @@ examsRouter.get("/suggest-date", async (req, res) => {
   const thirtyDaysOut = new Date(today);
   thirtyDaysOut.setUTCDate(thirtyDaysOut.getUTCDate() + 30);
 
-  const [conflictingExams, sessionsByDate] = await Promise.all([
+  const [conflictingExams, sessionsByDate, subjectExams] = await Promise.all([
     prisma.exam.findMany({
       where: {
         tenantId,
@@ -83,7 +84,7 @@ examsRouter.get("/suggest-date", async (req, res) => {
         status: { in: ["SCHEDULED", "IN_PROGRESS"] },
         examDate: { gte: today, lte: thirtyDaysOut },
       },
-      select: { examDate: true },
+      select: { examDate: true, subjectId: true },
     }),
     prisma.attendanceSession.groupBy({
       by: ["date"],
@@ -94,6 +95,18 @@ examsRouter.get("/suggest-date", async (req, res) => {
       },
       _count: { _all: true },
     }),
+    subjectId
+      ? prisma.exam.findMany({
+          where: {
+            tenantId,
+            batchId,
+            subjectId,
+            deletedAt: null,
+            examDate: { gte: today, lte: thirtyDaysOut },
+          },
+          select: { examDate: true },
+        })
+      : Promise.resolve<Array<{ examDate: Date | null }>>([]),
   ]);
 
   const examSet = new Set(
@@ -104,6 +117,12 @@ examsRouter.get("/suggest-date", async (req, res) => {
     sessionMap.set(formatDate(row.date), row._count._all);
   }
 
+  // B4 — avoid scheduling the same subject within 5 days of another same-subject exam
+  const SAME_SUBJECT_MIN_GAP_DAYS = 5;
+  const subjectDateKeys = subjectExams
+    .filter((e) => e.examDate)
+    .map((e) => e.examDate as Date);
+
   for (let i = 1; i <= 30; i++) {
     const d = new Date(today);
     d.setUTCDate(d.getUTCDate() + i);
@@ -113,6 +132,14 @@ examsRouter.get("/suggest-date", async (req, res) => {
     if (examSet.has(key)) continue;
     const sessions = sessionMap.get(key) ?? 0;
     if (sessions > 1) continue;
+
+    // Same-subject clustering check
+    const tooCloseToSameSubject = subjectDateKeys.some((existing) => {
+      const diffDays = Math.abs((d.getTime() - existing.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays < SAME_SUBJECT_MIN_GAP_DAYS;
+    });
+    if (tooCloseToSameSubject) continue;
+
     return ok(res, {
       suggestedDate: key,
       reason:
@@ -211,6 +238,7 @@ examsRouter.get("/:id", async (req, res) => {
     },
   });
   if (!exam) throw Errors.notFound("Exam");
+  void trackRecentItem(tenantId, req.user!.id, "exam", id).catch(() => {});
   return ok(res, exam);
 });
 

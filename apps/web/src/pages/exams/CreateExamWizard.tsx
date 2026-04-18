@@ -1,4 +1,4 @@
-import { Button, Input } from "@/components/primitives";
+import { Button, Input, SmartDateInput } from "@/components/primitives";
 import { api } from "@/lib/api";
 import { Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -437,11 +437,11 @@ export function CreateExamWizard({
           {step === 4 && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Input
+                <SmartDateInput
                   label="Exam date"
-                  type="date"
                   value={data.examDate}
-                  onChange={(e) => set("examDate", e.target.value)}
+                  onChange={(v) => set("examDate", v)}
+                  hint="Type a date or 'next Monday'"
                 />
                 <div className="sm:pt-5">
                   <Button

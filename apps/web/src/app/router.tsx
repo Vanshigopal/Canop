@@ -90,6 +90,9 @@ const SettingsPage = lazy(() =>
 const JoinRequestsPage = lazy(() =>
   import("@/pages/join-requests/JoinRequestsPage").then((m) => ({ default: m.JoinRequestsPage })),
 );
+const AtRiskPage = lazy(() =>
+  import("@/pages/at-risk/AtRiskPage").then((m) => ({ default: m.AtRiskPage })),
+);
 
 function lazyPage(node: React.ReactNode) {
   return <Suspense fallback={<PageSkeleton />}>{node}</Suspense>;
@@ -260,6 +263,14 @@ export const router = createBrowserRouter([
         element: lazyPage(
           <RoleGuard roles={["ADMIN", "STAFF"]}>
             <AnalyticsPage />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "at-risk",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN", "TEACHER", "STAFF"]}>
+            <AtRiskPage />
           </RoleGuard>,
         ),
       },

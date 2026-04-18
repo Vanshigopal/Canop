@@ -1,8 +1,12 @@
 import { Badge } from "@/components/primitives";
 import { useSocket } from "@/hooks/useSocket";
 import { api } from "@/lib/api";
+import { formatIndianCurrency } from "@/lib/indian-numbers";
 import { useAuthStore } from "@/stores/auth";
 import { useStatsStore } from "@/stores/stats";
+import { AnomalyAlertsWidget } from "./widgets/AnomalyAlertsWidget";
+import { AtRiskWidget } from "./widgets/AtRiskWidget";
+import { TopPerformersWidget } from "./widgets/TopPerformersWidget";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -75,7 +79,7 @@ export function AdminDashboard() {
   const todayPct = scopedTotals.pct !== null ? `${scopedTotals.pct}%` : "—";
 
   const revenueValue = monthRevenue
-    ? `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(monthRevenue.collected)}`
+    ? formatIndianCurrency(monthRevenue.collected)
     : "—";
   const revenueSub = monthRevenue ? (
     <span
@@ -262,13 +266,10 @@ export function AdminDashboard() {
         )}
       </div>
 
-      <div className="glass-panel p-6 max-w-2xl">
-        <h2 className="font-display text-lg mb-4">What&apos;s coming next</h2>
-        <div className="space-y-3">
-          <Upcoming session={8} text="SMS & WhatsApp reminders for fees + attendance" />
-          <Upcoming session={9} text="Exams, marks entry, OMR scanning, and gradebook" />
-          <Upcoming session={10} text="Retest scheduling and exam workflows" />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <TopPerformersWidget />
+        <AtRiskWidget />
+        <AnomalyAlertsWidget />
       </div>
     </div>
   );
@@ -318,13 +319,3 @@ function AnimatedNumber({ value }: { value: number }) {
   return <>{display}</>;
 }
 
-function Upcoming({ session, text }: { session: number; text: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="font-mono text-2xs text-indigo font-semibold bg-indigo/10 px-2 py-0.5 rounded shrink-0">
-        S{session}
-      </span>
-      <span className="text-sm text-text-body">{text}</span>
-    </div>
-  );
-}

@@ -1,10 +1,19 @@
 import { Router } from "express";
 import { prisma, withTenantTransaction } from "@/config/db";
 import { emitToTenant } from "@/config/socket";
+import { pickLeastFullBatch } from "@/lib/algorithms/workload-balance";
 import { Errors } from "@/lib/errors";
 import { ok, paginated } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { notifySafe } from "@/services/notification.service";
+
+function currentAcademicYear(): string {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const isAfterJune = now.getUTCMonth() >= 5;
+  const start = isAfterJune ? year : year - 1;
+  return `${start}-${String(start + 1).slice(-2)}`;
+}
 
 export const joinRequestsRouter = Router();
 
@@ -58,6 +67,18 @@ joinRequestsRouter.post("/:id/approve", async (req, res) => {
   if (!jr) throw Errors.notFound("Join request");
   if (jr.status !== "PENDING") throw Errors.badRequest("This request has already been processed");
 
+  // G2 — Workload balance: if no batch specified and we have a class, pick the least-full batch
+  let effectiveBatchId = jr.batchId;
+  if (!effectiveBatchId && jr.classId) {
+    const pick = await pickLeastFullBatch(tenantId, jr.classId, currentAcademicYear());
+    if (pick) {
+      effectiveBatchId = pick.batchId;
+      console.log(
+        `[workload-balance] Auto-assigned ${jr.studentName} to ${pick.batchName} (fill: ${Math.round(pick.fillRate * 100)}%)`,
+      );
+    }
+  }
+
   const result = await withTenantTransaction(prisma, tenantId, async (tx) => {
     const studentEmail = jr.studentEmail || `${jr.studentPhone.replace(/\+/g, "")}@student.raquel.app`;
     const studentUser = await tx.user.create({
@@ -74,7 +95,7 @@ joinRequestsRouter.post("/:id/approve", async (req, res) => {
       data: {
         tenantId,
         userId: studentUser.id,
-        batchId: jr.batchId,
+        batchId: effectiveBatchId,
         classId: jr.classId,
         dateOfBirth: jr.dateOfBirth,
         gender: jr.gender,
@@ -86,6 +107,14 @@ joinRequestsRouter.post("/:id/approve", async (req, res) => {
         bloodGroup: jr.bloodGroup,
       },
     });
+
+    if (effectiveBatchId) {
+      await tx.studentBatch.upsert({
+        where: { studentId_batchId: { studentId: student.id, batchId: effectiveBatchId } },
+        update: { leftAt: null, isPrimary: true },
+        create: { tenantId, studentId: student.id, batchId: effectiveBatchId, isPrimary: true },
+      });
+    }
 
     const guardianData = jr.guardians as Array<{
       name: string;

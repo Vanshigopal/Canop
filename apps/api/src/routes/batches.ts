@@ -3,6 +3,7 @@ import { CreateBatchSchema, UpdateBatchSchema, BatchSubjectAssignSchema } from "
 import { prisma, withTenantTransaction } from "@/config/db";
 import { Errors } from "@/lib/errors";
 import { ok, created, paginated } from "@/lib/response";
+import { trackRecentItem } from "@/lib/search/recency";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
 
@@ -44,6 +45,7 @@ batchesRouter.get("/:id", async (req, res) => {
     },
   });
   if (!batch) throw Errors.notFound("Batch");
+  void trackRecentItem(req.user!.tenantId, req.user!.id, "batch", id).catch(() => {});
   return ok(res, batch);
 });
 

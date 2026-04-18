@@ -1077,6 +1077,62 @@ async function main() {
   });
   console.log("[seed] 1 COMPLETED retest for Aarav (Chemistry 11-A)");
 
+  // ══════════════════════════════════════════════════════════════════
+  // INTELLIGENCE TRACKING (Session 10A)
+  // ══════════════════════════════════════════════════════════════════
+  const recentEntities: Array<{ entityType: string; entityId: string }> = [
+    { entityType: "student", entityId: aaravStudent.id },
+    { entityType: "batch", entityId: batch11A.id },
+    { entityType: "teacher", entityId: demoTeacher.id },
+    { entityType: "exam", entityId: examFail.id },
+    { entityType: "exam", entityId: examMock.id },
+  ];
+  for (const e of recentEntities) {
+    await prisma.recentItem.upsert({
+      where: {
+        userId_entityType_entityId: {
+          userId: demoAdmin.id,
+          entityType: e.entityType,
+          entityId: e.entityId,
+        },
+      },
+      update: { lastViewed: new Date() },
+      create: {
+        tenantId: demoTenant.id,
+        userId: demoAdmin.id,
+        entityType: e.entityType,
+        entityId: e.entityId,
+      },
+    });
+  }
+  console.log(`[seed] ${recentEntities.length} RecentItem rows for demo admin`);
+
+  // Engagement snapshot for Aarav (today)
+  const snapshotDate = new Date();
+  snapshotDate.setUTCHours(0, 0, 0, 0);
+  await prisma.engagementSnapshot.upsert({
+    where: {
+      studentId_snapshotDate: {
+        studentId: aaravStudent.id,
+        snapshotDate,
+      },
+    },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      studentId: aaravStudent.id,
+      snapshotDate,
+      score: 64.5,
+      attendanceScore: 75,
+      marksScore: 60,
+      assignmentScore: 50,
+      videoScore: 50,
+      loginScore: 80,
+      riskFactors: ["failing_exams"],
+    },
+  });
+  console.log("[seed] 1 EngagementSnapshot for Aarav");
+
   console.log("[seed] Done.");
 }
 

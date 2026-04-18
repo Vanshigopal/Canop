@@ -1,6 +1,7 @@
 import { Badge, Button, Input } from "@/components/primitives";
 import { api } from "@/lib/api";
 import { useSocket } from "@/hooks/useSocket";
+import { formatIndianCurrency } from "@/lib/indian-numbers";
 import { Check, Printer, Receipt } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -516,7 +517,7 @@ function ReceiptModal({ receipt, onClose }: { receipt: Receipt; onClose: () => v
             {receipt.installment && (
               <ReceiptRow
                 k="Installment"
-                v={`#${receipt.installment.number} · ₹${receipt.installment.amount.toLocaleString("en-IN")}`}
+                v={`#${receipt.installment.number} · ${formatIndianCurrency(receipt.installment.amount)}`}
               />
             )}
             <ReceiptRow k="Method" v={receipt.payment.method.replace("_", " ").toLowerCase()} />
@@ -564,5 +565,5 @@ function PaymentStatusBadge({ status }: { status: string }) {
 function money(n: string | number): string {
   const v = typeof n === "string" ? Number(n) : n;
   if (Number.isNaN(v)) return "—";
-  return `₹${new Intl.NumberFormat("en-IN").format(v)}`;
+  return formatIndianCurrency(v);
 }

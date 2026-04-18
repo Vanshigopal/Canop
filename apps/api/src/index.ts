@@ -5,6 +5,7 @@ import express from "express";
 import { env } from "@/config/env";
 import { redis } from "@/config/redis";
 import { initializeSocket } from "@/config/socket";
+import { sanitizeRequestMiddleware } from "@/lib/sanitize";
 import { corsMiddleware } from "@/middleware/cors";
 import { errorMiddleware } from "@/middleware/error";
 import { loggerMiddleware } from "@/middleware/logger";
@@ -22,6 +23,7 @@ import { feePlansRouter } from "@/routes/feePlans";
 import { feesReportsRouter } from "@/routes/feesReports";
 import { gradebookRouter } from "@/routes/gradebook";
 import { healthRouter } from "@/routes/health";
+import { intelligenceRouter } from "@/routes/intelligence";
 import { invitesRouter } from "@/routes/invites";
 import { joinRequestsRouter } from "@/routes/joinRequests";
 import { marksRouter } from "@/routes/marks";
@@ -29,6 +31,7 @@ import { notificationConfigRouter } from "@/routes/notificationConfig";
 import { parentFeesRouter } from "@/routes/parentFees";
 import { paymentsRouter } from "@/routes/payments";
 import { retestsRouter } from "@/routes/retests";
+import { searchRouter } from "@/routes/search";
 import { statsRouter } from "@/routes/stats";
 import { studentFeesRouter } from "@/routes/studentFees";
 import { studentGradebookRouter } from "@/routes/studentGradebook";
@@ -45,6 +48,7 @@ app.use(loggerMiddleware);
 app.use(corsMiddleware);
 app.use(compression());
 app.use(express.json({ limit: "1mb" }));
+app.use(sanitizeRequestMiddleware);
 
 app.use("/health", healthRouter);
 
@@ -80,6 +84,8 @@ app.use("/api/v1/exams", examsRouter);
 app.use("/api/v1/gradebook", gradebookRouter);
 app.use("/api/v1/student", studentGradebookRouter);
 app.use("/api/v1/retests", retestsRouter);
+app.use("/api/v1/intelligence", intelligenceRouter);
+app.use("/api/v1/search", searchRouter);
 
 app.use(errorMiddleware);
 

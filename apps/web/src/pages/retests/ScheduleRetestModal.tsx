@@ -1,4 +1,4 @@
-import { Button, Input } from "@/components/primitives";
+import { Button, Input, SmartDateInput } from "@/components/primitives";
 import { api } from "@/lib/api";
 import { X } from "lucide-react";
 import { useState } from "react";
@@ -61,7 +61,7 @@ export function ScheduleRetestModal({
           </p>
         </div>
         <div className="p-5 space-y-3">
-          <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <SmartDateInput label="Date" value={date} onChange={setDate} />
           <Input label="Time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           <div>
             <label

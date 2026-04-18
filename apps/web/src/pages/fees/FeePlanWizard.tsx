@@ -1,5 +1,6 @@
 import { Button, Input } from "@/components/primitives";
 import { api } from "@/lib/api";
+import { formatIndianCurrency } from "@/lib/indian-numbers";
 import { ArrowLeft, ArrowRight, Check, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -292,7 +293,7 @@ export function FeePlanWizard({ onClose, onSuccess }: { onClose: () => void; onS
                 v={batches.find((b) => b.id === form.batchId)?.name ?? "—"}
               />
               <Row k="Academic year" v={form.academicYear} />
-              <Row k="Total" v={`₹${totalAmount.toLocaleString("en-IN")}`} />
+              <Row k="Total" v={formatIndianCurrency(totalAmount)} />
               <Row
                 k="Installments"
                 v={`${form.installmentCount} · ${form.installmentFrequency.toLowerCase()}`}
@@ -301,7 +302,7 @@ export function FeePlanWizard({ onClose, onSuccess }: { onClose: () => void; onS
               {form.lateFeeAmount && (
                 <Row
                   k="Late fee"
-                  v={`₹${form.lateFeeAmount} after ${form.gracePeriodDays} day grace`}
+                  v={`${formatIndianCurrency(Number(form.lateFeeAmount))} after ${form.gracePeriodDays} day grace`}
                 />
               )}
               <div>

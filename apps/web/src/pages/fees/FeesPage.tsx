@@ -1,6 +1,7 @@
 import { Badge, Button } from "@/components/primitives";
 import { api } from "@/lib/api";
 import { useSocket } from "@/hooks/useSocket";
+import { formatIndianCurrency } from "@/lib/indian-numbers";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, IndianRupee, Plus, TrendingUp, Users, Wallet } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -756,7 +757,7 @@ export function money(n: string | number | undefined | null): string {
   if (n === null || n === undefined || n === "") return "—";
   const v = typeof n === "string" ? Number(n) : n;
   if (Number.isNaN(v)) return "—";
-  return `₹${new Intl.NumberFormat("en-IN").format(v)}`;
+  return formatIndianCurrency(v);
 }
 
 export const Trend = { ArrowUpRight, ArrowDownRight };

@@ -31,6 +31,9 @@ export async function enableRLS(prisma: PrismaClient): Promise<void> {
     "exams",
     "mark_entries",
     "retests",
+    "recent_items",
+    "message_dedup_keys",
+    "engagement_snapshots",
   ];
 
   for (const table of tenantScopedTables) {

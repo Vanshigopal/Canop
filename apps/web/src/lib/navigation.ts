@@ -20,6 +20,7 @@ import {
   UserPlus,
   RotateCcw,
   Settings,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -73,6 +74,7 @@ export const adminNavigation: NavGroup[] = [
     label: "Intelligence",
     items: [
       { name: "AI Assistant", path: "/ai-assistant", icon: Sparkles },
+      { name: "At-Risk Students", path: "/at-risk", icon: AlertTriangle },
       { name: "Analytics", path: "/analytics", icon: BarChart3 },
     ],
   },

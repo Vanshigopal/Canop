@@ -5,6 +5,7 @@ import { CreateTeacherSchema, UpdateTeacherSchema } from "@raquel/types";
 import { prisma, withTenantTransaction } from "@/config/db";
 import { Errors } from "@/lib/errors";
 import { ok, created } from "@/lib/response";
+import { trackRecentItem } from "@/lib/search/recency";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
 import { notifySafe } from "@/services/notification.service";
@@ -90,6 +91,7 @@ teachersRouter.get("/:id", async (req, res) => {
     },
   });
   if (!teacher) throw Errors.notFound("Teacher");
+  void trackRecentItem(req.user!.tenantId, req.user!.id, "teacher", id).catch(() => {});
   return ok(res, teacher);
 });
 

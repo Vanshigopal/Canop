@@ -1,5 +1,6 @@
 import { prisma } from "@/config/db";
 import { emitToTenant } from "@/config/socket";
+import { isDuplicate, recordDedupKey } from "@/lib/dedup";
 import { resolveTemplate } from "@/lib/template-engine";
 import type { DeliveryStatus, NotificationChannel } from "@prisma/client";
 import { sendEmail, sendSMS, sendWhatsApp } from "./gupshup.adapter";
@@ -62,6 +63,16 @@ export async function sendNotification(params: SendNotificationParams): Promise<
 
     const recipientPhone = channel === "SMS" || channel === "WHATSAPP" ? user.phone : null;
     const recipientEmail = channel === "EMAIL" ? user.email : null;
+
+    // I2 — deduplicate identical messages within 1-hour window (in-app excluded from dedup for now)
+    if (!campaignId) {
+      const { duplicate, key } = await isDuplicate(tenantId, recipientUserId, eventType, body);
+      if (duplicate) {
+        console.log(`[notify] deduplicated ${eventType} to ${recipientUserId} (key=${key.slice(0, 8)}...)`);
+        continue;
+      }
+      await recordDedupKey(tenantId, key);
+    }
 
     if (!consented) {
       const delivery = await prisma.messageDelivery.create({
