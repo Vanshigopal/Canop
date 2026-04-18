@@ -152,6 +152,30 @@ enum RetestStatus {
   CANCELLED
 }
 
+enum LLMMode {
+  DISABLED
+  PLATFORM_KEY
+  BRING_YOUR_OWN_KEY
+}
+
+enum LLMProviderName {
+  ANTHROPIC_CLAUDE
+  OPENAI_GPT
+  LOCAL_LLAMA
+}
+
+enum LLMRequestStatus {
+  SUCCESS
+  STUBBED
+  FAILED_DISABLED
+  FAILED_CAP_REACHED
+  FAILED_INVALID_KEY
+  FAILED_RATE_LIMIT
+  FAILED_PROVIDER_ERROR
+  FAILED_TIMEOUT
+  FAILED_REDACTION
+}
+
 // ════════════════════════════════════════════════════════
 // CORE PLATFORM — not tenant-scoped (global tables)
 // ════════════════════════════════════════════════════════
@@ -188,6 +212,9 @@ model Tenant {
   recentItems           RecentItem[]
   engagementSnapshots   EngagementSnapshot[]
   omrScanResults        OmrScanResult[]
+  llmConfig             LLMConfig?
+  llmRequestLogs        LLMRequestLog[]
+  llmSpendCap           LLMSpendCap?
 
   @@map("tenants")
 }
@@ -234,6 +261,7 @@ model User {
   enteredRetestMarks       Retest[]                @relation("RetestMarksEnterer")
   recentItems              RecentItem[]
   scannedOmrResults        OmrScanResult[]         @relation("OmrScanner")
+  llmRequestLogs           LLMRequestLog[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1164,4 +1192,104 @@ model EngagementSnapshot {
   @@index([tenantId, snapshotDate])
   @@index([tenantId, score])
   @@map("engagement_snapshots")
+}
+
+// ════════════════════════════════════════════════════════
+// LLM INFRASTRUCTURE (Session 11)
+// ════════════════════════════════════════════════════════
+
+model LLMConfig {
+  id                    String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String           @unique @map("tenant_id") @db.Uuid
+  mode                  LLMMode          @default(DISABLED)
+  provider              LLMProviderName  @default(ANTHROPIC_CLAUDE)
+
+  encryptedApiKey       String?          @map("encrypted_api_key") @db.Text
+  apiKeyLastTestedAt    DateTime?        @map("api_key_last_tested_at")
+  apiKeyLastTestStatus  String?          @map("api_key_last_test_status") @db.VarChar(20)
+
+  preferredModel        String           @default("claude-3-5-sonnet-20241022") @map("preferred_model") @db.VarChar(100)
+
+  shareStudentNames     Boolean          @default(false) @map("share_student_names")
+  shareParentNames      Boolean          @default(false) @map("share_parent_names")
+  shareExamMarks        Boolean          @default(true) @map("share_exam_marks")
+  shareAttendanceData   Boolean          @default(true) @map("share_attendance_data")
+  shareContactInfo      Boolean          @default(false) @map("share_contact_info")
+
+  enableAiChatbot       Boolean          @default(false) @map("enable_ai_chatbot")
+  enableAiReports       Boolean          @default(false) @map("enable_ai_reports")
+  enableAiTranslation   Boolean          @default(false) @map("enable_ai_translation")
+  enableAiQuestionGen   Boolean          @default(false) @map("enable_ai_question_gen")
+
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+
+  tenant                Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  requestLogs           LLMRequestLog[]
+  spendCap              LLMSpendCap?
+
+  @@index([tenantId])
+  @@map("llm_configs")
+}
+
+model LLMRequestLog {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String            @map("tenant_id") @db.Uuid
+  configId           String            @map("config_id") @db.Uuid
+  userId             String?           @map("user_id") @db.Uuid
+
+  featureKey         String            @map("feature_key") @db.VarChar(50)
+
+  provider           LLMProviderName
+  model              String            @db.VarChar(100)
+
+  inputTokens        Int               @default(0) @map("input_tokens")
+  outputTokens       Int               @default(0) @map("output_tokens")
+  totalTokens        Int               @default(0) @map("total_tokens")
+
+  estimatedCostCents Decimal           @default(0) @map("estimated_cost_cents") @db.Decimal(10, 4)
+
+  status             LLMRequestStatus
+  errorCode          String?           @map("error_code") @db.VarChar(50)
+  errorMessage       String?           @map("error_message") @db.VarChar(500)
+
+  durationMs         Int               @default(0) @map("duration_ms")
+
+  promptHash         String?           @map("prompt_hash") @db.VarChar(64)
+
+  createdAt          DateTime          @default(now()) @map("created_at")
+
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  config             LLMConfig         @relation(fields: [configId], references: [id], onDelete: Cascade)
+  user               User?             @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, featureKey])
+  @@index([tenantId, createdAt])
+  @@index([status])
+  @@map("llm_request_logs")
+}
+
+model LLMSpendCap {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String            @unique @map("tenant_id") @db.Uuid
+  configId           String            @unique @map("config_id") @db.Uuid
+
+  monthlyCapCents    Decimal           @map("monthly_cap_cents") @db.Decimal(12, 2)
+
+  alertedAt50        DateTime?         @map("alerted_at_50")
+  alertedAt80        DateTime?         @map("alerted_at_80")
+  alertedAt100       DateTime?         @map("alerted_at_100")
+
+  currentMonthCents  Decimal           @default(0) @map("current_month_cents") @db.Decimal(12, 4)
+  currentMonth       String            @default("") @map("current_month") @db.VarChar(7)
+
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  config             LLMConfig         @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("llm_spend_caps")
 }

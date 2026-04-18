@@ -1133,6 +1133,25 @@ async function main() {
   });
   console.log("[seed] 1 EngagementSnapshot for Aarav");
 
+  // LLM config (Session 11) — disabled by default
+  await prisma.lLMConfig.upsert({
+    where: { tenantId: demoTenant.id },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      mode: "DISABLED",
+    },
+  });
+  await prisma.lLMConfig.upsert({
+    where: { tenantId: testTenant.id },
+    update: {},
+    create: {
+      tenantId: testTenant.id,
+      mode: "DISABLED",
+    },
+  });
+  console.log("[seed] LLMConfig (DISABLED) for demo + test tenants");
+
   console.log("[seed] Done.");
 }
 

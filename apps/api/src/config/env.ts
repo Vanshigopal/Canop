@@ -17,6 +17,8 @@ const EnvSchema = z.object({
   GUPSHUP_SENDER_ID: z.string().default(""),
   ML_SERVICE_URL: z.string().default("http://localhost:8000"),
   ML_SERVICE_API_KEY: z.string().default("dev-internal-key"),
+  ANTHROPIC_API_KEY: z.string().default(""),
+  LLM_ENCRYPTION_KEY: z.string().default(""),
 });
 
 export const env = EnvSchema.parse(process.env);

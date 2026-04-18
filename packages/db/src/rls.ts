@@ -35,6 +35,9 @@ export async function enableRLS(prisma: PrismaClient): Promise<void> {
     "message_dedup_keys",
     "engagement_snapshots",
     "omr_scan_results",
+    "llm_configs",
+    "llm_request_logs",
+    "llm_spend_caps",
   ];
 
   for (const table of tenantScopedTables) {

@@ -27,6 +27,8 @@ import { healthRouter } from "@/routes/health";
 import { intelligenceRouter } from "@/routes/intelligence";
 import { invitesRouter } from "@/routes/invites";
 import { joinRequestsRouter } from "@/routes/joinRequests";
+import { llmConfigRouter } from "@/routes/llm-config";
+import { llmTestRouter } from "@/routes/llm-test";
 import { marksRouter } from "@/routes/marks";
 import { notificationConfigRouter } from "@/routes/notificationConfig";
 import { omrRouter } from "@/routes/omr";
@@ -90,6 +92,8 @@ app.use("/api/v1/intelligence", intelligenceRouter);
 app.use("/api/v1/search", searchRouter);
 app.use("/api/v1/omr", omrRouter);
 app.use("/api/v1/dropout", dropoutRouter);
+app.use("/api/v1/ai/config", llmConfigRouter);
+app.use("/api/v1/ai", llmTestRouter);
 
 app.use(errorMiddleware);
 
