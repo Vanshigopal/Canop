@@ -27,9 +27,11 @@ import { healthRouter } from "@/routes/health";
 import { intelligenceRouter } from "@/routes/intelligence";
 import { invitesRouter } from "@/routes/invites";
 import { joinRequestsRouter } from "@/routes/joinRequests";
+import { assignmentsRouter } from "@/routes/assignments";
 import { llmConfigRouter } from "@/routes/llm-config";
 import { llmTestRouter } from "@/routes/llm-test";
 import { marksRouter } from "@/routes/marks";
+import { materialsRouter } from "@/routes/materials";
 import { notificationConfigRouter } from "@/routes/notificationConfig";
 import { omrRouter } from "@/routes/omr";
 import { parentFeesRouter } from "@/routes/parentFees";
@@ -41,10 +43,13 @@ import { studentFeesRouter } from "@/routes/studentFees";
 import { studentGradebookRouter } from "@/routes/studentGradebook";
 import { studentsRouter } from "@/routes/students";
 import { subjectsRouter } from "@/routes/subjects";
+import { staticRouter } from "@/routes/static";
 import { teachersRouter } from "@/routes/teachers";
 import { templatesRouter } from "@/routes/templates";
 import { tenantRouter } from "@/routes/tenant";
+import { videosRouter } from "@/routes/videos";
 import { webhooksRouter } from "@/routes/webhooks";
+import { isStorageR2 } from "@/services/storage.service";
 
 const app = express();
 
@@ -58,6 +63,11 @@ app.use("/health", healthRouter);
 
 // Webhooks — external callers, no tenant resolution
 app.use("/api/v1/webhooks", webhooksRouter);
+
+// Static files — dev only or R2 fallback (no tenant middleware, signed URL handles access control)
+if (!isStorageR2() || env.NODE_ENV === "development") {
+  app.use("/api/v1/static", staticRouter);
+}
 
 app.use("/api/v1", tenantMiddleware);
 
@@ -94,6 +104,9 @@ app.use("/api/v1/omr", omrRouter);
 app.use("/api/v1/dropout", dropoutRouter);
 app.use("/api/v1/ai/config", llmConfigRouter);
 app.use("/api/v1/ai", llmTestRouter);
+app.use("/api/v1/materials", materialsRouter);
+app.use("/api/v1/videos", videosRouter);
+app.use("/api/v1/assignments", assignmentsRouter);
 
 app.use(errorMiddleware);
 

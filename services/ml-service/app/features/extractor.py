@@ -171,9 +171,79 @@ async def extract_dropout_features(tenant_id: str, student_id: str) -> dict:
                 student_id,
             )
 
-            # 10-11. Assignment / video rates — Session 12 placeholders
-            assignment_submission_rate = 0.5
-            video_watch_rate = 0.5
+            # 10. Assignment submission rate (real — Session 12)
+            assignment_rate = await conn.fetchrow(
+                """
+                WITH student_batch AS (
+                    SELECT batch_id FROM students WHERE id = $1
+                ),
+                eligible_assignments AS (
+                    SELECT a.id FROM assignments a
+                    WHERE a.batch_id = (SELECT batch_id FROM student_batch)
+                    AND a.status IN ('PUBLISHED', 'CLOSED')
+                    AND a.published_at IS NOT NULL
+                    AND a.published_at >= CURRENT_DATE - INTERVAL '90 days'
+                    AND a.deleted_at IS NULL
+                ),
+                submitted AS (
+                    SELECT COUNT(DISTINCT assignment_id) AS count
+                    FROM assignment_submissions
+                    WHERE student_id = $1
+                    AND assignment_id IN (SELECT id FROM eligible_assignments)
+                    AND status IN ('SUBMITTED', 'LATE_SUBMITTED', 'GRADED')
+                )
+                SELECT
+                    CASE
+                        WHEN (SELECT COUNT(*) FROM eligible_assignments) = 0 THEN 0.5
+                        ELSE CAST((SELECT count FROM submitted) AS FLOAT)
+                            / (SELECT COUNT(*) FROM eligible_assignments)
+                    END AS rate
+                """,
+                student_id,
+            )
+            assignment_submission_rate = float(assignment_rate["rate"] or 0.5)
+
+            # 11. Video watch rate (real — Session 12)
+            video_rate = await conn.fetchrow(
+                """
+                WITH student_batch AS (
+                    SELECT batch_id FROM students WHERE id = $1
+                ),
+                accessible_videos AS (
+                    SELECT DISTINCT vl.id
+                    FROM video_lectures vl
+                    LEFT JOIN video_batch_access vba ON vba.video_id = vl.id
+                    WHERE vl.is_published = true
+                    AND vl.status = 'READY'
+                    AND vl.deleted_at IS NULL
+                    AND vl.created_at >= CURRENT_DATE - INTERVAL '90 days'
+                    AND (
+                        vl.access_type = 'INSTITUTE'
+                        OR vba.batch_id = (SELECT batch_id FROM student_batch)
+                    )
+                ),
+                watched AS (
+                    SELECT
+                        video_id,
+                        MAX(completion_percent) AS best_completion
+                    FROM video_watch_sessions
+                    WHERE student_id = $1
+                    AND video_id IN (SELECT id FROM accessible_videos)
+                    GROUP BY video_id
+                )
+                SELECT
+                    CASE
+                        WHEN (SELECT COUNT(*) FROM accessible_videos) = 0 THEN 0.5
+                        ELSE COALESCE(
+                            (SELECT SUM(best_completion) FROM watched) /
+                            ((SELECT COUNT(*) FROM accessible_videos) * 100.0),
+                            0
+                        )
+                    END AS rate
+                """,
+                student_id,
+            )
+            video_watch_rate = float(video_rate["rate"] or 0.5)
 
             # 12. Days since last login
             last_login = await conn.fetchval(
@@ -394,6 +464,80 @@ async def extract_performance_features(
                 student_id,
             )
 
+            # Assignment submission rate (real — Session 12)
+            assignment_rate = await conn.fetchrow(
+                """
+                WITH student_batch AS (
+                    SELECT batch_id FROM students WHERE id = $1
+                ),
+                eligible_assignments AS (
+                    SELECT a.id FROM assignments a
+                    WHERE a.batch_id = (SELECT batch_id FROM student_batch)
+                    AND a.status IN ('PUBLISHED', 'CLOSED')
+                    AND a.published_at IS NOT NULL
+                    AND a.published_at >= CURRENT_DATE - INTERVAL '90 days'
+                    AND a.deleted_at IS NULL
+                ),
+                submitted AS (
+                    SELECT COUNT(DISTINCT assignment_id) AS count
+                    FROM assignment_submissions
+                    WHERE student_id = $1
+                    AND assignment_id IN (SELECT id FROM eligible_assignments)
+                    AND status IN ('SUBMITTED', 'LATE_SUBMITTED', 'GRADED')
+                )
+                SELECT
+                    CASE
+                        WHEN (SELECT COUNT(*) FROM eligible_assignments) = 0 THEN 0.5
+                        ELSE CAST((SELECT count FROM submitted) AS FLOAT)
+                            / (SELECT COUNT(*) FROM eligible_assignments)
+                    END AS rate
+                """,
+                student_id,
+            )
+            assignment_submission_rate = float(assignment_rate["rate"] or 0.5)
+
+            # Video watch rate (real — Session 12)
+            video_rate = await conn.fetchrow(
+                """
+                WITH student_batch AS (
+                    SELECT batch_id FROM students WHERE id = $1
+                ),
+                accessible_videos AS (
+                    SELECT DISTINCT vl.id
+                    FROM video_lectures vl
+                    LEFT JOIN video_batch_access vba ON vba.video_id = vl.id
+                    WHERE vl.is_published = true
+                    AND vl.status = 'READY'
+                    AND vl.deleted_at IS NULL
+                    AND vl.created_at >= CURRENT_DATE - INTERVAL '90 days'
+                    AND (
+                        vl.access_type = 'INSTITUTE'
+                        OR vba.batch_id = (SELECT batch_id FROM student_batch)
+                    )
+                ),
+                watched AS (
+                    SELECT
+                        video_id,
+                        MAX(completion_percent) AS best_completion
+                    FROM video_watch_sessions
+                    WHERE student_id = $1
+                    AND video_id IN (SELECT id FROM accessible_videos)
+                    GROUP BY video_id
+                )
+                SELECT
+                    CASE
+                        WHEN (SELECT COUNT(*) FROM accessible_videos) = 0 THEN 0.5
+                        ELSE COALESCE(
+                            (SELECT SUM(best_completion) FROM watched) /
+                            ((SELECT COUNT(*) FROM accessible_videos) * 100.0),
+                            0
+                        )
+                    END AS rate
+                """,
+                student_id,
+            )
+            video_watch_rate = float(video_rate["rate"] or 0.5)
+
             return {
                 "recent_avg_percentage": float(recent["recent_avg"] or 0),
                 "subject_avg_percentage": float(subject["subject_avg"] or 0),
@@ -403,9 +547,10 @@ async def extract_performance_features(
                 "days_since_last_exam": float(
                     last_exam["days_since"] if last_exam else 180
                 ),
-                "study_material_access_rate": 0.5,  # Session 12 placeholder
-                "assignment_submission_rate": 0.5,  # Session 12 placeholder
-                "video_watch_rate": 0.5,  # Session 12 placeholder
+                "study_material_access_rate": assignment_submission_rate * 0.5
+                    + video_watch_rate * 0.5,
+                "assignment_submission_rate": assignment_submission_rate,
+                "video_watch_rate": video_watch_rate,
                 "last_exam_percentage": float(
                     last_exam["percentage"] if last_exam else 0
                 ),

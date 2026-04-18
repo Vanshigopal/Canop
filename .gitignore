@@ -34,3 +34,6 @@ coverage/
 
 # Docker volumes (keep the yml, ignore runtime data)
 infra/docker/data/
+
+# Local file uploads (dev mode storage fallback)
+apps/api/uploads/

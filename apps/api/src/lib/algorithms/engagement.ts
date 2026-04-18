@@ -140,9 +140,9 @@ async function computeInTx(
   // Login
   const loginScore = scoreLogin(student.user.lastLoginAt);
 
-  // Assignment / video — placeholders until Session 12
-  const assignmentScore = 50;
-  const videoScore = 50;
+  // Assignment / video — real scores (Session 12)
+  const assignmentScore = await computeAssignmentScore(tx, studentId);
+  const videoScore = await computeVideoScore(tx, studentId);
 
   const score =
     attendanceScore * WEIGHTS.attendance +
@@ -181,6 +181,97 @@ export async function computeEngagementBatch(
     }
     return result;
   });
+}
+
+/**
+ * Compute 0-100 score from assignment submission rate in last 90 days.
+ * Neutral 50 if student has no eligible assignments (can't be measured).
+ */
+async function computeAssignmentScore(
+  tx: PrismaClient,
+  studentId: string,
+): Promise<number> {
+  const student = await tx.student.findUnique({
+    where: { id: studentId },
+    select: { batchId: true },
+  });
+  if (!student || !student.batchId) return 50;
+
+  const ninetyDaysAgo = subDays(new Date(), 90);
+
+  const eligibleAssignments = await tx.assignment.findMany({
+    where: {
+      batchId: student.batchId,
+      status: { in: ["PUBLISHED", "CLOSED"] },
+      publishedAt: { gte: ninetyDaysAgo },
+      deletedAt: null,
+    },
+    select: { id: true },
+  });
+
+  if (eligibleAssignments.length === 0) return 50;
+
+  const submitted = await tx.assignmentSubmission.count({
+    where: {
+      studentId,
+      assignmentId: { in: eligibleAssignments.map((a) => a.id) },
+      status: { in: ["SUBMITTED", "LATE_SUBMITTED", "GRADED"] },
+    },
+  });
+
+  const rate = submitted / eligibleAssignments.length;
+  return Math.round(rate * 100);
+}
+
+/**
+ * Compute 0-100 score from average video completion % in last 90 days.
+ * Neutral 50 if no accessible videos exist for this student.
+ */
+async function computeVideoScore(tx: PrismaClient, studentId: string): Promise<number> {
+  const student = await tx.student.findUnique({
+    where: { id: studentId },
+    select: { batchId: true },
+  });
+  if (!student || !student.batchId) return 50;
+
+  const ninetyDaysAgo = subDays(new Date(), 90);
+
+  const accessibleVideos = await tx.videoLecture.findMany({
+    where: {
+      isPublished: true,
+      status: "READY",
+      deletedAt: null,
+      createdAt: { gte: ninetyDaysAgo },
+      OR: [
+        { accessType: "INSTITUTE" },
+        { batchAccess: { some: { batchId: student.batchId } } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (accessibleVideos.length === 0) return 50;
+
+  const videoIds = accessibleVideos.map((v) => v.id);
+
+  const bestPerVideo = await tx.videoWatchSession.groupBy({
+    by: ["videoId"],
+    where: {
+      studentId,
+      videoId: { in: videoIds },
+    },
+    _max: { completionPercent: true },
+  });
+
+  if (bestPerVideo.length === 0) return 0;
+
+  const totalCompletion = bestPerVideo.reduce(
+    (sum, ws) => sum + Number(ws._max.completionPercent ?? 0),
+    0,
+  );
+  const avg = totalCompletion / accessibleVideos.length;
+
+  return Math.round(Math.min(100, avg));
 }
 
 /**

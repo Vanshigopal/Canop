@@ -176,6 +176,48 @@ enum LLMRequestStatus {
   FAILED_REDACTION
 }
 
+enum ContentAccessType {
+  BATCH
+  SUBJECT
+  INSTITUTE
+}
+
+enum MaterialType {
+  PDF
+  DOCX
+  PPT
+  IMAGE
+  OTHER
+}
+
+enum MaterialAction {
+  VIEWED
+  DOWNLOADED
+}
+
+enum VideoStatus {
+  UPLOADING
+  TRANSCODING
+  READY
+  FAILED
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum SubmissionStatus {
+  NOT_OPENED
+  OPENED
+  IN_PROGRESS
+  SUBMITTED
+  LATE_SUBMITTED
+  GRADED
+  MISSED
+}
+
 // ════════════════════════════════════════════════════════
 // CORE PLATFORM — not tenant-scoped (global tables)
 // ════════════════════════════════════════════════════════
@@ -215,6 +257,16 @@ model Tenant {
   llmConfig             LLMConfig?
   llmRequestLogs        LLMRequestLog[]
   llmSpendCap           LLMSpendCap?
+  studyMaterials        StudyMaterial[]
+  materialBatchAccess   MaterialBatchAccess[]
+  materialAccessLogs    MaterialAccessLog[]
+  videoLectures         VideoLecture[]
+  videoBatchAccess      VideoBatchAccess[]
+  videoWatchSessions    VideoWatchSession[]
+  assignments           Assignment[]
+  assignmentAttachments AssignmentAttachment[]
+  assignmentSubmissions AssignmentSubmission[]
+  submissionFiles       SubmissionFile[]
 
   @@map("tenants")
 }
@@ -262,6 +314,12 @@ model User {
   recentItems              RecentItem[]
   scannedOmrResults        OmrScanResult[]         @relation("OmrScanner")
   llmRequestLogs           LLMRequestLog[]
+  uploadedMaterials        StudyMaterial[]         @relation("MaterialUploader")
+  materialAccessLogs       MaterialAccessLog[]
+  uploadedVideos           VideoLecture[]          @relation("VideoUploader")
+  videoWatchSessions       VideoWatchSession[]
+  createdAssignments       Assignment[]            @relation("AssignmentCreator")
+  gradedSubmissions        AssignmentSubmission[]  @relation("SubmissionGrader")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -352,6 +410,9 @@ model Subject {
   teacherSubjects    TeacherSubject[]
   attendanceSessions AttendanceSession[]
   exams              Exam[]
+  studyMaterials     StudyMaterial[]
+  videoLectures      VideoLecture[]
+  assignments        Assignment[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -401,6 +462,9 @@ model Batch {
   studentBatches     StudentBatch[]
   feePlans           FeePlan[]
   exams              Exam[]
+  materialAccess     MaterialBatchAccess[]
+  videoAccess        VideoBatchAccess[]
+  assignments        Assignment[]
 
   @@unique([tenantId, name, academicYear])
   @@index([tenantId])
@@ -467,18 +531,21 @@ model Student {
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
 
-  tenant               Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  batch                Batch?         @relation(fields: [batchId], references: [id])
-  class                ClassStandard? @relation(fields: [classId], references: [id])
-  guardians            Guardian[]
-  attendanceRecords    AttendanceRecord[]
-  batches              StudentBatch[]
-  fees                 StudentFee[]
-  markEntries          MarkEntry[]
-  retests              Retest[]
-  engagementSnapshots  EngagementSnapshot[]
-  omrScanResults       OmrScanResult[]
+  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batch                 Batch?         @relation(fields: [batchId], references: [id])
+  class                 ClassStandard? @relation(fields: [classId], references: [id])
+  guardians             Guardian[]
+  attendanceRecords     AttendanceRecord[]
+  batches               StudentBatch[]
+  fees                  StudentFee[]
+  markEntries           MarkEntry[]
+  retests               Retest[]
+  engagementSnapshots   EngagementSnapshot[]
+  omrScanResults        OmrScanResult[]
+  materialAccessLogs    MaterialAccessLog[]
+  videoWatchSessions    VideoWatchSession[]
+  assignmentSubmissions AssignmentSubmission[]
 
   @@index([tenantId])
   @@index([tenantId, batchId])
@@ -1292,4 +1359,287 @@ model LLMSpendCap {
 
   @@index([tenantId])
   @@map("llm_spend_caps")
+}
+
+// ════════════════════════════════════════════════════════
+// CONTENT MODULES (Session 12)
+// ════════════════════════════════════════════════════════
+
+model StudyMaterial {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String             @map("tenant_id") @db.Uuid
+  title           String             @db.VarChar(200)
+  description     String?            @db.VarChar(1000)
+  materialType    MaterialType       @map("material_type")
+
+  fileKey         String             @map("file_key") @db.VarChar(500)
+  fileName        String             @map("file_name") @db.VarChar(255)
+  fileSize        Int                @map("file_size")
+  mimeType        String             @map("mime_type") @db.VarChar(100)
+
+  subjectId       String?            @map("subject_id") @db.Uuid
+  chapterNumber   Int?               @map("chapter_number")
+  chapterTitle    String?            @map("chapter_title") @db.VarChar(200)
+
+  accessType      ContentAccessType  @default(BATCH) @map("access_type")
+
+  uploadedById    String             @map("uploaded_by_id") @db.Uuid
+  viewCount       Int                @default(0) @map("view_count")
+  downloadCount   Int                @default(0) @map("download_count")
+  publishedAt     DateTime?          @map("published_at")
+  isPublished     Boolean            @default(true) @map("is_published")
+
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  deletedAt       DateTime?          @map("deleted_at")
+
+  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subject         Subject?           @relation(fields: [subjectId], references: [id])
+  uploadedBy      User               @relation("MaterialUploader", fields: [uploadedById], references: [id])
+  batchAccess     MaterialBatchAccess[]
+  accessLogs      MaterialAccessLog[]
+
+  @@index([tenantId])
+  @@index([tenantId, subjectId])
+  @@index([tenantId, isPublished])
+  @@map("study_materials")
+}
+
+model MaterialBatchAccess {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String         @map("tenant_id") @db.Uuid
+  materialId   String         @map("material_id") @db.Uuid
+  batchId      String         @map("batch_id") @db.Uuid
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  material     StudyMaterial  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  batch        Batch          @relation(fields: [batchId], references: [id])
+
+  @@unique([materialId, batchId])
+  @@index([tenantId])
+  @@index([batchId])
+  @@map("material_batch_access")
+}
+
+model MaterialAccessLog {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String          @map("tenant_id") @db.Uuid
+  materialId   String          @map("material_id") @db.Uuid
+  studentId    String?         @map("student_id") @db.Uuid
+  userId       String          @map("user_id") @db.Uuid
+  action       MaterialAction
+  ipAddress    String?         @map("ip_address") @db.VarChar(45)
+  userAgent    String?         @map("user_agent") @db.VarChar(500)
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  material     StudyMaterial   @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  student      Student?        @relation(fields: [studentId], references: [id])
+  user         User            @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([studentId, createdAt])
+  @@index([materialId])
+  @@map("material_access_logs")
+}
+
+model VideoLecture {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String             @map("tenant_id") @db.Uuid
+  title             String             @db.VarChar(200)
+  description       String?            @db.VarChar(1000)
+
+  bunnyVideoId      String?            @map("bunny_video_id") @db.VarChar(100)
+  bunnyLibraryId    String?            @map("bunny_library_id") @db.VarChar(100)
+  thumbnailUrl      String?            @map("thumbnail_url") @db.VarChar(500)
+  playbackUrl       String?            @map("playback_url") @db.VarChar(500)
+  durationSec       Int?               @map("duration_sec")
+  status            VideoStatus        @default(UPLOADING)
+
+  subjectId         String?            @map("subject_id") @db.Uuid
+  chapterNumber     Int?               @map("chapter_number")
+  chapterTitle      String?            @map("chapter_title") @db.VarChar(200)
+
+  accessType        ContentAccessType  @default(BATCH) @map("access_type")
+
+  uploadedById      String             @map("uploaded_by_id") @db.Uuid
+  viewCount         Int                @default(0) @map("view_count")
+  totalWatchTimeSec Int                @default(0) @map("total_watch_time_sec")
+  publishedAt       DateTime?          @map("published_at")
+  isPublished       Boolean            @default(false) @map("is_published")
+
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  deletedAt         DateTime?          @map("deleted_at")
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subject           Subject?           @relation(fields: [subjectId], references: [id])
+  uploadedBy        User               @relation("VideoUploader", fields: [uploadedById], references: [id])
+  batchAccess       VideoBatchAccess[]
+  watchSessions     VideoWatchSession[]
+
+  @@index([tenantId])
+  @@index([tenantId, subjectId])
+  @@index([tenantId, isPublished])
+  @@map("video_lectures")
+}
+
+model VideoBatchAccess {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String         @map("tenant_id") @db.Uuid
+  videoId    String         @map("video_id") @db.Uuid
+  batchId    String         @map("batch_id") @db.Uuid
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  video      VideoLecture   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  batch      Batch          @relation(fields: [batchId], references: [id])
+
+  @@unique([videoId, batchId])
+  @@index([tenantId])
+  @@index([batchId])
+  @@map("video_batch_access")
+}
+
+model VideoWatchSession {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String           @map("tenant_id") @db.Uuid
+  videoId             String           @map("video_id") @db.Uuid
+  studentId           String           @map("student_id") @db.Uuid
+  userId              String           @map("user_id") @db.Uuid
+
+  startedAt           DateTime         @default(now()) @map("started_at")
+  lastHeartbeatAt     DateTime         @default(now()) @map("last_heartbeat_at")
+  endedAt             DateTime?        @map("ended_at")
+
+  furthestPositionSec Int              @default(0) @map("furthest_position_sec")
+  totalWatchedSec     Int              @default(0) @map("total_watched_sec")
+  completionPercent   Decimal          @default(0) @map("completion_percent") @db.Decimal(5, 2)
+
+  deviceType          String?          @map("device_type") @db.VarChar(50)
+
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  tenant              Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  video               VideoLecture     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  student             Student          @relation(fields: [studentId], references: [id])
+  user                User             @relation(fields: [userId], references: [id])
+
+  @@unique([videoId, studentId])
+  @@index([tenantId])
+  @@index([videoId, studentId])
+  @@index([studentId, updatedAt])
+  @@map("video_watch_sessions")
+}
+
+model Assignment {
+  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String                 @map("tenant_id") @db.Uuid
+  title               String                 @db.VarChar(200)
+  description         String                 @db.Text
+  instructions        String?                @db.Text
+
+  batchId             String                 @map("batch_id") @db.Uuid
+  subjectId           String?                @map("subject_id") @db.Uuid
+
+  publishedAt         DateTime?              @map("published_at")
+  deadline            DateTime
+  allowLateSubmission Boolean                @default(true) @map("allow_late_submission")
+  lateDeadline        DateTime?              @map("late_deadline")
+
+  totalMarks          Decimal                @map("total_marks") @db.Decimal(6, 2)
+  latePenaltyPercent  Decimal?               @map("late_penalty_percent") @db.Decimal(5, 2)
+
+  status              AssignmentStatus       @default(DRAFT)
+
+  createdById         String                 @map("created_by_id") @db.Uuid
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @updatedAt @map("updated_at")
+  deletedAt           DateTime?              @map("deleted_at")
+
+  tenant              Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  batch               Batch                  @relation(fields: [batchId], references: [id])
+  subject             Subject?               @relation(fields: [subjectId], references: [id])
+  createdBy           User                   @relation("AssignmentCreator", fields: [createdById], references: [id])
+  attachments         AssignmentAttachment[]
+  submissions         AssignmentSubmission[]
+
+  @@index([tenantId])
+  @@index([tenantId, batchId])
+  @@index([tenantId, status])
+  @@index([tenantId, deadline])
+  @@map("assignments")
+}
+
+model AssignmentAttachment {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String      @map("tenant_id") @db.Uuid
+  assignmentId  String      @map("assignment_id") @db.Uuid
+  fileKey       String      @map("file_key") @db.VarChar(500)
+  fileName      String      @map("file_name") @db.VarChar(255)
+  fileSize      Int         @map("file_size")
+  mimeType      String      @map("mime_type") @db.VarChar(100)
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignment    Assignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([assignmentId])
+  @@map("assignment_attachments")
+}
+
+model AssignmentSubmission {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String            @map("tenant_id") @db.Uuid
+  assignmentId   String            @map("assignment_id") @db.Uuid
+  studentId      String            @map("student_id") @db.Uuid
+
+  openedAt       DateTime?         @map("opened_at")
+  firstUploadAt  DateTime?         @map("first_upload_at")
+  submittedAt    DateTime?         @map("submitted_at")
+
+  status         SubmissionStatus  @default(NOT_OPENED)
+  isLate         Boolean           @default(false) @map("is_late")
+
+  marksAwarded   Decimal?          @map("marks_awarded") @db.Decimal(6, 2)
+  feedback       String?           @db.Text
+  gradedById     String?           @map("graded_by_id") @db.Uuid
+  gradedAt       DateTime?         @map("graded_at")
+
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignment     Assignment        @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student        Student           @relation(fields: [studentId], references: [id])
+  gradedBy       User?             @relation("SubmissionGrader", fields: [gradedById], references: [id])
+  files          SubmissionFile[]
+
+  @@unique([assignmentId, studentId])
+  @@index([tenantId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
+  @@map("assignment_submissions")
+}
+
+model SubmissionFile {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String                @map("tenant_id") @db.Uuid
+  submissionId    String                @map("submission_id") @db.Uuid
+  fileKey         String                @map("file_key") @db.VarChar(500)
+  fileName        String                @map("file_name") @db.VarChar(255)
+  fileSize        Int                   @map("file_size")
+  mimeType        String                @map("mime_type") @db.VarChar(100)
+  uploadedAt      DateTime              @default(now()) @map("uploaded_at")
+
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  submission      AssignmentSubmission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([submissionId])
+  @@map("submission_files")
 }
