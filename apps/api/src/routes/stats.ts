@@ -26,6 +26,9 @@ statsRouter.get("/overview", async (req, res) => {
   const thisMonthStart = startOfMonthUTC();
   const prevMonthStart = startOfPreviousMonthUTC();
 
+  const recentPublishStart = new Date(today);
+  recentPublishStart.setUTCDate(recentPublishStart.getUTCDate() - 30);
+
   const [
     studentCount,
     teacherCount,
@@ -36,6 +39,9 @@ statsRouter.get("/overview", async (req, res) => {
     prevMonthPayments,
     pendingFeesAgg,
     overdueInstalls,
+    upcomingExams,
+    recentlyPublishedExams,
+    marksEntryPendingExams,
   ] = await Promise.all([
     prisma.student.count({ where: { tenantId, deletedAt: null } }),
     prisma.user.count({ where: { tenantId, role: "TEACHER", deletedAt: null } }),
@@ -76,6 +82,29 @@ statsRouter.get("/overview", async (req, res) => {
     prisma.installment.findMany({
       where: { tenantId, status: "OVERDUE" },
       select: { amount: true, paidAmount: true, lateFee: true },
+    }),
+    prisma.exam.count({
+      where: {
+        tenantId,
+        deletedAt: null,
+        status: { in: ["SCHEDULED", "IN_PROGRESS"] },
+        examDate: { gte: today },
+      },
+    }),
+    prisma.exam.count({
+      where: {
+        tenantId,
+        deletedAt: null,
+        status: "PUBLISHED",
+        publishedAt: { gte: recentPublishStart },
+      },
+    }),
+    prisma.exam.count({
+      where: {
+        tenantId,
+        deletedAt: null,
+        status: { in: ["MARKS_ENTRY", "UNDER_REVIEW"] },
+      },
     }),
   ]);
 
@@ -131,6 +160,11 @@ statsRouter.get("/overview", async (req, res) => {
       overdue: Math.round(totalOverdue * 100) / 100,
       trend,
       trendPercent: Math.abs(trendPercent),
+    },
+    exams: {
+      upcoming: upcomingExams,
+      recentlyPublished: recentlyPublishedExams,
+      marksEntryPending: marksEntryPendingExams,
     },
   });
 });

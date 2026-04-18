@@ -178,7 +178,13 @@ async function main() {
   const chem = subjects[1]!;
 
   const batch11A = await prisma.batch.upsert({
-    where: { tenantId_name_academicYear: { tenantId: demoTenant.id, name: "11-A", academicYear: "2025-2026" } },
+    where: {
+      tenantId_name_academicYear: {
+        tenantId: demoTenant.id,
+        name: "11-A",
+        academicYear: "2025-2026",
+      },
+    },
     update: {},
     create: {
       tenantId: demoTenant.id,
@@ -190,7 +196,13 @@ async function main() {
   });
 
   const batchNeet = await prisma.batch.upsert({
-    where: { tenantId_name_academicYear: { tenantId: demoTenant.id, name: "NEET-2026", academicYear: "2025-2026" } },
+    where: {
+      tenantId_name_academicYear: {
+        tenantId: demoTenant.id,
+        name: "NEET-2026",
+        academicYear: "2025-2026",
+      },
+    },
     update: {},
     create: {
       tenantId: demoTenant.id,
@@ -755,7 +767,13 @@ async function main() {
   console.log(`[seed] ${defaultTemplates.length} default notification templates`);
 
   // ── Consent records (all seeded users consented) ──
-  const consentUsers = [demoAdmin.id, demoTeacher.id, demoParent.id, demoStudent.id, demoStudent2.id];
+  const consentUsers = [
+    demoAdmin.id,
+    demoTeacher.id,
+    demoParent.id,
+    demoStudent.id,
+    demoStudent2.id,
+  ];
   const consentChannels: Array<"SMS" | "WHATSAPP" | "EMAIL"> = ["SMS", "WHATSAPP", "EMAIL"];
   for (const uid of consentUsers) {
     for (const ch of consentChannels) {
@@ -769,7 +787,9 @@ async function main() {
       }
     }
   }
-  console.log(`[seed] Consent records for ${consentUsers.length} users × ${consentChannels.length} channels`);
+  console.log(
+    `[seed] Consent records for ${consentUsers.length} users × ${consentChannels.length} channels`,
+  );
 
   // ── Sample broadcast campaign (already sent) ──
   const sampleCampaign = await prisma.broadcastCampaign.upsert({
@@ -820,7 +840,139 @@ async function main() {
       });
     }
   }
-  console.log(`[seed] Sample broadcast "${sampleCampaign.title}" with ${parents.length} deliveries`);
+  console.log(
+    `[seed] Sample broadcast "${sampleCampaign.title}" with ${parents.length} deliveries`,
+  );
+
+  // ── Exams (Session 9A) ──
+  const bioSubj = subjects.find((s) => s.name === "Biology")!;
+  const chemSubj = subjects.find((s) => s.name === "Chemistry")!;
+
+  const now = new Date();
+  const twoMonthsAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 2, 15));
+  const oneMonthAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15));
+  const oneWeekAgo = new Date(now);
+  oneWeekAgo.setUTCDate(oneWeekAgo.getUTCDate() - 7);
+  oneWeekAgo.setUTCHours(0, 0, 0, 0);
+
+  const examBio1 = await prisma.exam.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000301" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000301",
+      tenantId: demoTenant.id,
+      batchId: batchNeet.id,
+      subjectId: bioSubj.id,
+      name: "Unit Test 1 — Biology",
+      type: "THEORY",
+      status: "PUBLISHED",
+      totalMarks: 100,
+      cutOffType: "PERCENTAGE",
+      passingPercent: 40,
+      examDate: twoMonthsAgo,
+      startTime: "09:00",
+      endTime: "11:00",
+      duration: 120,
+      createdById: demoAdmin.id,
+      publishedById: demoAdmin.id,
+      publishedAt: new Date(twoMonthsAgo.getTime() + 2 * 86400000),
+    },
+  });
+
+  const examMock = await prisma.exam.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000302" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000302",
+      tenantId: demoTenant.id,
+      batchId: batchNeet.id,
+      subjectId: null,
+      name: "Mock NEET Phase 1",
+      type: "MCQ",
+      status: "PUBLISHED",
+      totalMarks: 720,
+      cutOffType: "PERCENTAGE",
+      passingPercent: 50,
+      totalQuestions: 180,
+      marksPerCorrect: 4,
+      marksPerWrong: -1,
+      marksPerUnattempted: 0,
+      examDate: oneMonthAgo,
+      startTime: "09:00",
+      endTime: "12:00",
+      duration: 180,
+      createdById: demoAdmin.id,
+      publishedById: demoAdmin.id,
+      publishedAt: new Date(oneMonthAgo.getTime() + 2 * 86400000),
+    },
+  });
+
+  await prisma.exam.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000303" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000303",
+      tenantId: demoTenant.id,
+      batchId: batchNeet.id,
+      subjectId: chemSubj.id,
+      name: "Unit Test 2 — Chemistry",
+      type: "THEORY",
+      status: "MARKS_ENTRY",
+      totalMarks: 100,
+      cutOffType: "PERCENTAGE",
+      passingPercent: 40,
+      examDate: oneWeekAgo,
+      startTime: "09:00",
+      endTime: "11:00",
+      duration: 120,
+      createdById: demoAdmin.id,
+    },
+  });
+
+  // Mark entries for Sneha (the NEET-batch student)
+  await prisma.markEntry.upsert({
+    where: { examId_studentId: { examId: examBio1.id, studentId: snehaStudent.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      examId: examBio1.id,
+      studentId: snehaStudent.id,
+      marksObtained: 72,
+      percentage: 72,
+      grade: "B+",
+      batchRank: 1,
+      isPassed: true,
+      isAbsent: false,
+      enteredById: demoTeacher.id,
+      enteredAt: new Date(twoMonthsAgo.getTime() + 86400000),
+    },
+  });
+
+  await prisma.markEntry.upsert({
+    where: { examId_studentId: { examId: examMock.id, studentId: snehaStudent.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      examId: examMock.id,
+      studentId: snehaStudent.id,
+      marksObtained: 430,
+      percentage: 59.7,
+      grade: "C",
+      batchRank: 1,
+      isPassed: true,
+      isAbsent: false,
+      mcqCorrect: 115,
+      mcqIncorrect: 30,
+      mcqUnattempted: 35,
+      mcqPositiveMarks: 460,
+      mcqNegativeMarks: -30,
+      mcqNetMarks: 430,
+      trendDirection: "down",
+      enteredById: demoTeacher.id,
+      enteredAt: new Date(oneMonthAgo.getTime() + 86400000),
+    },
+  });
+  console.log("[seed] 3 exams + 2 mark entries for Sneha");
 
   console.log("[seed] Done.");
 }
