@@ -50,6 +50,14 @@ export async function studentGradebook(
     }
   }
 
+  // Retest lookup for this student across all relevant exams
+  const retests = examIds.length
+    ? await prisma.retest.findMany({
+        where: { tenantId, studentId, examId: { in: examIds } },
+      })
+    : [];
+  const retestMap = new Map(retests.map((r) => [r.examId, r]));
+
   const results = entries.map((e) => {
     const exam = e.exam;
     const totalMarks = Number(exam.totalMarks);
@@ -75,6 +83,26 @@ export async function studentGradebook(
             netScore: num(e.mcqNetMarks) ?? 0,
           }
         : null;
+    const r = retestMap.get(e.examId);
+    const retest = r
+      ? {
+          retestId: r.id,
+          status: r.status,
+          scheduledDate: r.scheduledDate,
+          scheduledTime: r.scheduledTime,
+          retestMarks: num(r.retestMarks),
+          retestPercentage: num(r.retestPercentage),
+          retestIsPassed: r.retestIsPassed,
+          originalMarks: num(r.originalMarks),
+          originalPercentage: num(r.originalPercentage),
+          attendedAt: r.attendedAt,
+          retestTheoryMarks: num(r.retestTheoryMarks),
+          retestMcqCorrect: r.retestMcqCorrect,
+          retestMcqIncorrect: r.retestMcqIncorrect,
+          retestMcqUnattempted: r.retestMcqUnattempted,
+        }
+      : null;
+
     return {
       examId: exam.id,
       examName: exam.name,
@@ -94,7 +122,7 @@ export async function studentGradebook(
       cutOff,
       mcqBreakdown,
       theoryMarks: num(e.theoryMarks),
-      retest: null,
+      retest,
     };
   });
 

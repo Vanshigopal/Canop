@@ -144,6 +144,14 @@ enum CutOffType {
   PERCENTAGE
 }
 
+enum RetestStatus {
+  PENDING_SCHEDULE
+  SCHEDULED
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+}
+
 // ════════════════════════════════════════════════════════
 // CORE PLATFORM — not tenant-scoped (global tables)
 // ════════════════════════════════════════════════════════
@@ -219,6 +227,8 @@ model User {
   createdExams             Exam[]                  @relation("ExamCreator")
   publishedExams           Exam[]                  @relation("ExamPublisher")
   enteredMarks             MarkEntry[]             @relation("MarkEnterer")
+  confirmedRetests         Retest[]                @relation("RetestConfirmer")
+  enteredRetestMarks       Retest[]                @relation("RetestMarksEnterer")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -433,6 +443,7 @@ model Student {
   batches            StudentBatch[]
   fees               StudentFee[]
   markEntries        MarkEntry[]
+  retests            Retest[]
 
   @@index([tenantId])
   @@index([tenantId, batchId])
@@ -964,6 +975,7 @@ model Exam {
   publishedBy         User?               @relation("ExamPublisher", fields: [publishedById], references: [id])
   markEntries         MarkEntry[]
   attendanceSessions  AttendanceSession[]
+  retests             Retest[]
 
   @@index([tenantId])
   @@index([tenantId, batchId])
@@ -1014,4 +1026,55 @@ model MarkEntry {
   @@index([tenantId, studentId])
   @@index([examId])
   @@map("mark_entries")
+}
+
+// ════════════════════════════════════════════════════════
+// RETEST
+// ════════════════════════════════════════════════════════
+
+model Retest {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String        @map("tenant_id") @db.Uuid
+  examId                String        @map("exam_id") @db.Uuid
+  studentId             String        @map("student_id") @db.Uuid
+
+  originalMarks         Decimal       @map("original_marks") @db.Decimal(8, 2)
+  originalPercentage    Decimal       @map("original_percentage") @db.Decimal(5, 2)
+  cutOff                Decimal       @map("cut_off") @db.Decimal(8, 2)
+  cutOffType            CutOffType    @map("cut_off_type")
+
+  scheduledDate         DateTime?     @map("scheduled_date") @db.Date
+  scheduledTime         String?       @map("scheduled_time") @db.VarChar(5)
+  confirmedById         String?       @map("confirmed_by_id") @db.Uuid
+  confirmedAt           DateTime?     @map("confirmed_at")
+
+  retestMarks           Decimal?      @map("retest_marks") @db.Decimal(8, 2)
+  retestPercentage      Decimal?      @map("retest_percentage") @db.Decimal(5, 2)
+  retestIsPassed        Boolean?      @map("retest_is_passed")
+
+  retestMcqCorrect      Int?          @map("retest_mcq_correct")
+  retestMcqIncorrect    Int?          @map("retest_mcq_incorrect")
+  retestMcqUnattempted  Int?          @map("retest_mcq_unattempted")
+  retestTheoryMarks     Decimal?      @map("retest_theory_marks") @db.Decimal(8, 2)
+
+  attendedAt            DateTime?     @map("attended_at")
+  status                RetestStatus  @default(PENDING_SCHEDULE)
+  noShowNotifiedAt      DateTime?     @map("no_show_notified_at")
+  attendanceRecordId    String?       @map("attendance_record_id") @db.Uuid
+
+  enteredById           String?       @map("entered_by_id") @db.Uuid
+  note                  String?       @db.VarChar(500)
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  exam                  Exam          @relation(fields: [examId], references: [id])
+  student               Student       @relation(fields: [studentId], references: [id])
+  confirmedBy           User?         @relation("RetestConfirmer", fields: [confirmedById], references: [id])
+  enteredBy             User?         @relation("RetestMarksEnterer", fields: [enteredById], references: [id])
+
+  @@unique([examId, studentId])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, scheduledDate])
+  @@map("retests")
 }

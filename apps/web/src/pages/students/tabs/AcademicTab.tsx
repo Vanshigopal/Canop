@@ -28,6 +28,19 @@ interface McqBreakdown {
   netScore: number;
 }
 
+interface RetestInfo {
+  retestId: string;
+  status: "PENDING_SCHEDULE" | "SCHEDULED" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
+  scheduledDate: string | null;
+  scheduledTime: string | null;
+  retestMarks: number | null;
+  retestPercentage: number | null;
+  retestIsPassed: boolean | null;
+  originalMarks: number;
+  originalPercentage: number;
+  attendedAt: string | null;
+}
+
 interface ResultRow {
   examId: string;
   examName: string;
@@ -46,7 +59,7 @@ interface ResultRow {
   cutOff: { type: "MARKS" | "PERCENTAGE"; value: number };
   mcqBreakdown: McqBreakdown | null;
   theoryMarks: number | null;
-  retest: null;
+  retest: RetestInfo | null;
 }
 
 interface Gradebook {
@@ -314,7 +327,7 @@ export function AcademicTab({ studentId }: { studentId: string }) {
                       <span className="text-text-dim text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-text-dim">—</td>
+                  <td className="px-4 py-3">{retestCell(row)}</td>
                 </tr>
               ))}
             </tbody>
@@ -323,6 +336,51 @@ export function AcademicTab({ studentId }: { studentId: string }) {
       </div>
     </div>
   );
+}
+
+function retestCell(row: ResultRow) {
+  const r = row.retest;
+  if (!r) return <span className="text-text-dim text-xs">—</span>;
+  if (r.status === "COMPLETED" && r.retestMarks != null) {
+    return (
+      <div className="text-xs space-y-1">
+        <div className="inline-flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded bg-danger/5 text-danger border border-danger/15">
+            {r.originalMarks}/{row.totalMarks} ({r.originalPercentage}%)
+          </span>
+          <span className="text-text-dim">→</span>
+          <span
+            className={`px-2 py-0.5 rounded border ${
+              r.retestIsPassed
+                ? "bg-success/5 text-success border-success/20"
+                : "bg-danger/5 text-danger border-danger/15"
+            }`}
+          >
+            {r.retestMarks}/{row.totalMarks} ({r.retestPercentage}%)
+          </span>
+        </div>
+        <div className="text-2xs text-text-dim">Original grade &amp; rank unchanged</div>
+      </div>
+    );
+  }
+  if (r.status === "PENDING_SCHEDULE") {
+    return <span className="text-2xs text-warning">Retest pending — to be scheduled</span>;
+  }
+  if (r.status === "SCHEDULED") {
+    return (
+      <span className="text-2xs text-info">
+        Scheduled for {r.scheduledDate ? r.scheduledDate.slice(0, 10) : "—"} at{" "}
+        {r.scheduledTime ?? "—"}
+      </span>
+    );
+  }
+  if (r.status === "NO_SHOW") {
+    return <span className="text-2xs text-danger">Did not appear for retest</span>;
+  }
+  if (r.status === "CANCELLED") {
+    return <span className="text-2xs text-text-dim">Retest cancelled</span>;
+  }
+  return <span className="text-text-dim text-xs">—</span>;
 }
 
 function StatCard({

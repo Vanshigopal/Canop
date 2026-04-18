@@ -462,7 +462,48 @@ marksRouter.post("/publish", requireRole("ADMIN"), async (req, res) => {
     }
   }
 
-  emitToTenant(tenantId, "exam:published", { examId, stats });
+  // Auto-create Retest records for failed (non-absent) students
+  const failed = entries.filter((e) => e.isPassed === false);
+  const retestCutOff =
+    exam.cutOffType === "MARKS" ? Number(exam.passingMarks ?? 0) : Number(exam.passingPercent ?? 0);
+
+  const createdRetests: string[] = [];
+  for (const e of failed) {
+    const existingRetest = await prisma.retest.findUnique({
+      where: { examId_studentId: { examId, studentId: e.studentId } },
+    });
+    if (existingRetest) continue;
+    const created = await prisma.retest.create({
+      data: {
+        tenantId,
+        examId,
+        studentId: e.studentId,
+        originalMarks: e.marksObtained ?? 0,
+        originalPercentage: e.percentage ?? 0,
+        cutOff: retestCutOff,
+        cutOffType: exam.cutOffType,
+        status: "PENDING_SCHEDULE",
+      },
+    });
+    createdRetests.push(created.id);
+    emitToTenant(tenantId, "retest:created", {
+      retestId: created.id,
+      examId,
+      studentId: e.studentId,
+    });
+  }
+  if (createdRetests.length > 0) {
+    emitToTenant(tenantId, "retests:bulk-created", {
+      examId,
+      count: createdRetests.length,
+    });
+  }
+
+  emitToTenant(tenantId, "exam:published", {
+    examId,
+    stats,
+    retestsCreated: createdRetests.length,
+  });
   emitToTenant(tenantId, "stats:updated", {});
-  return ok(res, { exam: updated, stats });
+  return ok(res, { exam: updated, stats, retestsCreated: createdRetests.length });
 });

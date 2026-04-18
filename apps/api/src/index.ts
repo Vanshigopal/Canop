@@ -28,6 +28,7 @@ import { marksRouter } from "@/routes/marks";
 import { notificationConfigRouter } from "@/routes/notificationConfig";
 import { parentFeesRouter } from "@/routes/parentFees";
 import { paymentsRouter } from "@/routes/payments";
+import { retestsRouter } from "@/routes/retests";
 import { statsRouter } from "@/routes/stats";
 import { studentFeesRouter } from "@/routes/studentFees";
 import { studentGradebookRouter } from "@/routes/studentGradebook";
@@ -78,6 +79,7 @@ app.use("/api/v1/exams/:id/marks", marksRouter);
 app.use("/api/v1/exams", examsRouter);
 app.use("/api/v1/gradebook", gradebookRouter);
 app.use("/api/v1/student", studentGradebookRouter);
+app.use("/api/v1/retests", retestsRouter);
 
 app.use(errorMiddleware);
 

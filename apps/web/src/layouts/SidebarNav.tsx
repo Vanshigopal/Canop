@@ -51,7 +51,12 @@ export function SidebarNav({ item, collapsed, active }: SidebarNavProps) {
                 fontSize: 10,
                 fontWeight: 600,
                 color: "white",
-                background: item.badgeTone === "danger" ? "#DC2626" : "#4F46E5",
+                background:
+                  item.badgeTone === "danger"
+                    ? "#DC2626"
+                    : item.badgeTone === "warning"
+                      ? "#D97706"
+                      : "#4F46E5",
               }}
             >
               {item.badge}

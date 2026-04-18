@@ -10,6 +10,7 @@ const LABELS: Record<string, string> = {
   exams: "Exams & Marks",
   omr: "OMR Scanner",
   gradebook: "Gradebook",
+  retests: "Retests",
   fees: "Fees",
   payments: "Payments",
   materials: "Materials",
@@ -42,8 +43,7 @@ export function Breadcrumbs() {
       </Link>
       {segments.map((seg, i) => {
         const path = "/" + segments.slice(0, i + 1).join("/");
-        const label =
-          LABELS[seg] || seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " ");
+        const label = LABELS[seg] || seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " ");
         const isLast = i === segments.length - 1;
 
         return (

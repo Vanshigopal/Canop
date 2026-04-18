@@ -30,6 +30,7 @@ export async function enableRLS(prisma: PrismaClient): Promise<void> {
     "consent_records",
     "exams",
     "mark_entries",
+    "retests",
   ];
 
   for (const table of tenantScopedTables) {

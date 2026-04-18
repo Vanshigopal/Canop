@@ -744,6 +744,34 @@ async function main() {
       subject: "Welcome to {institute_name}",
       body: "Welcome to {institute_name}! Your account has been created. Login at your institute's Raquel portal to get started.",
     },
+    {
+      name: "Retest Scheduled",
+      slug: "retest_scheduled",
+      eventType: "retest_scheduled",
+      channel: "WHATSAPP",
+      body: "Dear {student_name}, your retest for {exam_name} is scheduled on {retest_date} at {retest_time}. Please be on time. — {institute_name}",
+    },
+    {
+      name: "Retest Scheduled (Parent)",
+      slug: "retest_scheduled_parent",
+      eventType: "retest_scheduled_parent",
+      channel: "WHATSAPP",
+      body: "Dear {parent_name}, {student_name}'s retest for {exam_name} is scheduled on {retest_date} at {retest_time}. — {institute_name}",
+    },
+    {
+      name: "Retest No-Show Alert",
+      slug: "retest_no_show",
+      eventType: "retest_no_show",
+      channel: "IN_APP",
+      body: "{student_name} did not appear for the retest of {exam_name} scheduled at {retest_time} on {retest_date}.",
+    },
+    {
+      name: "Retest Results",
+      slug: "retest_results",
+      eventType: "retest_results",
+      channel: "WHATSAPP",
+      body: "Dear {parent_name}, {student_name} scored {marks}/{total_marks} ({percentage}%) in the {exam_name} retest. — {institute_name}",
+    },
   ];
 
   for (const t of defaultTemplates) {
@@ -973,6 +1001,81 @@ async function main() {
     },
   });
   console.log("[seed] 3 exams + 2 mark entries for Sneha");
+
+  // ── Retest (Session 9B) ──
+  // Aarav (11-A student) failed a chemistry unit test — create a PUBLISHED exam
+  // with a failed mark entry, then a COMPLETED retest to prove side-by-side display.
+  const examFailId = "00000000-0000-0000-0000-000000000304";
+  const examFail = await prisma.exam.upsert({
+    where: { id: examFailId },
+    update: {},
+    create: {
+      id: examFailId,
+      tenantId: demoTenant.id,
+      batchId: batch11A.id,
+      subjectId: chemSubj.id,
+      name: "Unit Test 1 — Chemistry (11-A)",
+      type: "THEORY",
+      status: "PUBLISHED",
+      totalMarks: 100,
+      cutOffType: "PERCENTAGE",
+      passingPercent: 40,
+      examDate: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 5)),
+      startTime: "09:00",
+      endTime: "11:00",
+      duration: 120,
+      createdById: demoAdmin.id,
+      publishedById: demoAdmin.id,
+      publishedAt: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 7)),
+    },
+  });
+
+  await prisma.markEntry.upsert({
+    where: { examId_studentId: { examId: examFail.id, studentId: aaravStudent.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      examId: examFail.id,
+      studentId: aaravStudent.id,
+      marksObtained: 32,
+      percentage: 32,
+      grade: "F",
+      batchRank: 1,
+      isPassed: false,
+      isAbsent: false,
+      enteredById: demoTeacher.id,
+      enteredAt: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 6)),
+    },
+  });
+
+  const retestScheduled = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 7),
+  );
+  await prisma.retest.upsert({
+    where: { examId_studentId: { examId: examFail.id, studentId: aaravStudent.id } },
+    update: {},
+    create: {
+      tenantId: demoTenant.id,
+      examId: examFail.id,
+      studentId: aaravStudent.id,
+      originalMarks: 32,
+      originalPercentage: 32,
+      cutOff: 40,
+      cutOffType: "PERCENTAGE",
+      scheduledDate: retestScheduled,
+      scheduledTime: "14:30",
+      confirmedById: demoAdmin.id,
+      confirmedAt: new Date(retestScheduled.getTime() - 2 * 86400000),
+      retestMarks: 52,
+      retestPercentage: 52,
+      retestIsPassed: true,
+      attendedAt: new Date(retestScheduled.getTime() + 5 * 60 * 1000),
+      status: "COMPLETED",
+      enteredById: demoTeacher.id,
+      note: "Improved understanding of periodic table",
+    },
+  });
+  console.log("[seed] 1 COMPLETED retest for Aarav (Chemistry 11-A)");
 
   console.log("[seed] Done.");
 }

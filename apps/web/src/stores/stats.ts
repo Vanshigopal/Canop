@@ -30,6 +30,13 @@ interface MonthRevenue {
   trendPercent: number;
 }
 
+interface RetestStats {
+  pendingSchedule: number;
+  scheduledThisWeek: number;
+  completed: number;
+  noShows: number;
+}
+
 interface StatsState {
   studentCount: number;
   teacherCount: number;
@@ -37,6 +44,7 @@ interface StatsState {
   pendingJoinRequests: number;
   todayAttendance: TodayAttendance | null;
   monthRevenue: MonthRevenue | null;
+  retests: RetestStats | null;
   loaded: boolean;
   fetch: () => Promise<void>;
 }
@@ -48,6 +56,7 @@ export const useStatsStore = create<StatsState>((set) => ({
   pendingJoinRequests: 0,
   todayAttendance: null,
   monthRevenue: null,
+  retests: null,
   loaded: false,
   fetch: async () => {
     try {
@@ -60,6 +69,7 @@ export const useStatsStore = create<StatsState>((set) => ({
         pendingJoinRequests: d.pendingJoinRequests,
         todayAttendance: d.todayAttendance ?? null,
         monthRevenue: d.monthRevenue ?? null,
+        retests: d.retests ?? null,
         loaded: true,
       });
     } catch {

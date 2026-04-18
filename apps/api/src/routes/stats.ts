@@ -29,6 +29,9 @@ statsRouter.get("/overview", async (req, res) => {
   const recentPublishStart = new Date(today);
   recentPublishStart.setUTCDate(recentPublishStart.getUTCDate() - 30);
 
+  const weekOut = new Date(today);
+  weekOut.setUTCDate(weekOut.getUTCDate() + 7);
+
   const [
     studentCount,
     teacherCount,
@@ -42,6 +45,10 @@ statsRouter.get("/overview", async (req, res) => {
     upcomingExams,
     recentlyPublishedExams,
     marksEntryPendingExams,
+    retestsPendingSchedule,
+    retestsScheduledThisWeek,
+    retestsCompleted,
+    retestsNoShows,
   ] = await Promise.all([
     prisma.student.count({ where: { tenantId, deletedAt: null } }),
     prisma.user.count({ where: { tenantId, role: "TEACHER", deletedAt: null } }),
@@ -106,6 +113,16 @@ statsRouter.get("/overview", async (req, res) => {
         status: { in: ["MARKS_ENTRY", "UNDER_REVIEW"] },
       },
     }),
+    prisma.retest.count({ where: { tenantId, status: "PENDING_SCHEDULE" } }),
+    prisma.retest.count({
+      where: {
+        tenantId,
+        status: "SCHEDULED",
+        scheduledDate: { gte: today, lte: weekOut },
+      },
+    }),
+    prisma.retest.count({ where: { tenantId, status: "COMPLETED" } }),
+    prisma.retest.count({ where: { tenantId, status: "NO_SHOW" } }),
   ]);
 
   const overallPresent = todaySessions.reduce((sum, s) => sum + s.totalPresent + s.totalLate, 0);
@@ -165,6 +182,12 @@ statsRouter.get("/overview", async (req, res) => {
       upcoming: upcomingExams,
       recentlyPublished: recentlyPublishedExams,
       marksEntryPending: marksEntryPendingExams,
+    },
+    retests: {
+      pendingSchedule: retestsPendingSchedule,
+      scheduledThisWeek: retestsScheduledThisWeek,
+      completed: retestsCompleted,
+      noShows: retestsNoShows,
     },
   });
 });

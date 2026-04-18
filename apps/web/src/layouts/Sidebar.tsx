@@ -34,8 +34,17 @@ export function Sidebar({ className, forceExpanded }: SidebarProps) {
   const navGroups: NavGroup[] = baseNav.map((g) => ({
     ...g,
     items: g.items.map((item) => {
-      if (item.path === "/students" && stats.loaded) return { ...item, badge: String(stats.studentCount) };
-      if (item.path === "/join-requests" && stats.loaded) return { ...item, badge: stats.pendingJoinRequests > 0 ? String(stats.pendingJoinRequests) : undefined };
+      if (item.path === "/students" && stats.loaded)
+        return { ...item, badge: String(stats.studentCount) };
+      if (item.path === "/join-requests" && stats.loaded)
+        return {
+          ...item,
+          badge: stats.pendingJoinRequests > 0 ? String(stats.pendingJoinRequests) : undefined,
+        };
+      if (item.path === "/retests" && stats.loaded && stats.retests) {
+        const total = stats.retests.pendingSchedule + stats.retests.scheduledThisWeek;
+        return { ...item, badge: total > 0 ? String(total) : undefined, badgeTone: "warning" };
+      }
       return item;
     }),
   }));
@@ -51,7 +60,8 @@ export function Sidebar({ className, forceExpanded }: SidebarProps) {
         borderRight: "1px solid rgba(90, 70, 50, 0.10)",
         boxShadow: "inset -1px 0 0 rgba(255, 255, 255, 0.6)",
         padding: isCollapsed ? "30px 10px" : "30px 22px",
-        transition: "width 0.3s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        transition:
+          "width 0.3s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
     >
       {/* Brand */}

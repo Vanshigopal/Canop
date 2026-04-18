@@ -18,6 +18,7 @@ import {
   Sparkles,
   BarChart3,
   UserPlus,
+  RotateCcw,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -27,7 +28,7 @@ export interface NavItem {
   path: string;
   icon: LucideIcon;
   badge?: string;
-  badgeTone?: "default" | "danger";
+  badgeTone?: "default" | "danger" | "warning";
 }
 
 export interface NavGroup {
@@ -52,6 +53,7 @@ export const adminNavigation: NavGroup[] = [
       { name: "Exams & Marks", path: "/exams", icon: FileText },
       { name: "OMR Scanner", path: "/omr", icon: ScanLine },
       { name: "Gradebook", path: "/gradebook", icon: BookOpen },
+      { name: "Retests", path: "/retests", icon: RotateCcw },
       { name: "Videos", path: "/videos", icon: Video },
       { name: "Materials", path: "/materials", icon: FolderOpen },
       { name: "Assignments", path: "/assignments", icon: ClipboardList },
@@ -77,15 +79,19 @@ export const adminNavigation: NavGroup[] = [
   {
     label: "Admin",
     items: [
-      { name: "Join Requests", path: "/join-requests", icon: UserPlus, badge: "2", badgeTone: "danger" },
+      {
+        name: "Join Requests",
+        path: "/join-requests",
+        icon: UserPlus,
+        badge: "2",
+        badgeTone: "danger",
+      },
       { name: "Settings", path: "/settings", icon: Settings },
     ],
   },
 ];
 
-export function getTeacherNavigation(
-  permissions?: { canManageFees?: boolean } | null,
-): NavGroup[] {
+export function getTeacherNavigation(permissions?: { canManageFees?: boolean } | null): NavGroup[] {
   return adminNavigation
     .filter((g) => g.label !== "Admin")
     .map((g) => {
