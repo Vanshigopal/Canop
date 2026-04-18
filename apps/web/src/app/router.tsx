@@ -4,6 +4,7 @@ import { AuthGuard } from "@/components/guards/AuthGuard";
 import { RoleGuard } from "@/components/guards/RoleGuard";
 import { PageSkeleton } from "@/components/primitives";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { PortalLayout } from "@/layouts/PortalLayout";
 
 const LoginPage = lazy(() =>
   import("@/pages/login/LoginPage").then((m) => ({ default: m.LoginPage })),
@@ -17,11 +18,83 @@ const EnrollPage = lazy(() =>
 const DashboardRouter = lazy(() =>
   import("@/pages/dashboard/DashboardRouter").then((m) => ({ default: m.DashboardRouter })),
 );
-const StudentPortal = lazy(() =>
-  import("@/pages/portal/StudentPortal").then((m) => ({ default: m.StudentPortal })),
+
+const StudentDashboard = lazy(() =>
+  import("@/pages/portal/student/StudentDashboard").then((m) => ({
+    default: m.StudentDashboard,
+  })),
 );
-const ParentPortal = lazy(() =>
-  import("@/pages/parent/ParentPortal").then((m) => ({ default: m.ParentPortal })),
+const StudentAttendance = lazy(() =>
+  import("@/pages/portal/student/StudentAttendance").then((m) => ({
+    default: m.StudentAttendance,
+  })),
+);
+const StudentGrades = lazy(() =>
+  import("@/pages/portal/student/StudentGrades").then((m) => ({
+    default: m.StudentGrades,
+  })),
+);
+const StudentFees = lazy(() =>
+  import("@/pages/portal/student/StudentFees").then((m) => ({ default: m.StudentFees })),
+);
+const StudentAssignments = lazy(() =>
+  import("@/pages/portal/student/StudentAssignments").then((m) => ({
+    default: m.StudentAssignments,
+  })),
+);
+const AssignmentDetailPage = lazy(() =>
+  import("@/pages/portal/student/AssignmentDetailPage").then((m) => ({
+    default: m.AssignmentDetailPage,
+  })),
+);
+const StudentVideos = lazy(() =>
+  import("@/pages/portal/student/StudentVideos").then((m) => ({
+    default: m.StudentVideos,
+  })),
+);
+const VideoPlayerPage = lazy(() =>
+  import("@/pages/portal/student/VideoPlayerPage").then((m) => ({
+    default: m.VideoPlayerPage,
+  })),
+);
+const StudentMaterials = lazy(() =>
+  import("@/pages/portal/student/StudentMaterials").then((m) => ({
+    default: m.StudentMaterials,
+  })),
+);
+const StudentProfile = lazy(() =>
+  import("@/pages/portal/student/StudentProfile").then((m) => ({
+    default: m.StudentProfile,
+  })),
+);
+const NotificationsInbox = lazy(() =>
+  import("@/pages/portal/shared/NotificationsInbox").then((m) => ({
+    default: m.NotificationsInbox,
+  })),
+);
+
+const ParentDashboard = lazy(() =>
+  import("@/pages/portal/parent/ParentDashboard").then((m) => ({
+    default: m.ParentDashboard,
+  })),
+);
+const ParentAttendance = lazy(() =>
+  import("@/pages/portal/parent/ParentAttendance").then((m) => ({
+    default: m.ParentAttendance,
+  })),
+);
+const ParentGrades = lazy(() =>
+  import("@/pages/portal/parent/ParentGrades").then((m) => ({
+    default: m.ParentGrades,
+  })),
+);
+const ParentFees = lazy(() =>
+  import("@/pages/portal/parent/ParentFees").then((m) => ({ default: m.ParentFees })),
+);
+const ParentProfile = lazy(() =>
+  import("@/pages/portal/parent/ParentProfile").then((m) => ({
+    default: m.ParentProfile,
+  })),
 );
 const StudentsPage = lazy(() =>
   import("@/pages/students/StudentsPage").then((m) => ({ default: m.StudentsPage })),
@@ -312,39 +385,50 @@ export const router = createBrowserRouter([
         ),
       },
 
-      {
-        path: "portal",
-        element: lazyPage(
-          <RoleGuard roles={["STUDENT"]}>
-            <StudentPortal />
-          </RoleGuard>,
-        ),
-      },
-      {
-        path: "portal/:section",
-        element: lazyPage(
-          <RoleGuard roles={["STUDENT"]}>
-            <StudentPortal />
-          </RoleGuard>,
-        ),
-      },
-      {
-        path: "parent",
-        element: lazyPage(
-          <RoleGuard roles={["PARENT"]}>
-            <ParentPortal />
-          </RoleGuard>,
-        ),
-      },
-      {
-        path: "parent/:section",
-        element: lazyPage(
-          <RoleGuard roles={["PARENT"]}>
-            <ParentPortal />
-          </RoleGuard>,
-        ),
-      },
     ],
   },
+  {
+    path: "/portal/student",
+    element: (
+      <AuthGuard>
+        <RoleGuard roles={["STUDENT"]}>
+          <PortalLayout />
+        </RoleGuard>
+      </AuthGuard>
+    ),
+    children: [
+      { index: true, element: lazyPage(<StudentDashboard />) },
+      { path: "attendance", element: lazyPage(<StudentAttendance />) },
+      { path: "grades", element: lazyPage(<StudentGrades />) },
+      { path: "fees", element: lazyPage(<StudentFees />) },
+      { path: "assignments", element: lazyPage(<StudentAssignments />) },
+      { path: "assignments/:id", element: lazyPage(<AssignmentDetailPage />) },
+      { path: "videos", element: lazyPage(<StudentVideos />) },
+      { path: "videos/:id", element: lazyPage(<VideoPlayerPage />) },
+      { path: "materials", element: lazyPage(<StudentMaterials />) },
+      { path: "inbox", element: lazyPage(<NotificationsInbox />) },
+      { path: "profile", element: lazyPage(<StudentProfile />) },
+    ],
+  },
+  {
+    path: "/portal/parent",
+    element: (
+      <AuthGuard>
+        <RoleGuard roles={["PARENT"]}>
+          <PortalLayout />
+        </RoleGuard>
+      </AuthGuard>
+    ),
+    children: [
+      { index: true, element: lazyPage(<ParentDashboard />) },
+      { path: "attendance", element: lazyPage(<ParentAttendance />) },
+      { path: "grades", element: lazyPage(<ParentGrades />) },
+      { path: "fees", element: lazyPage(<ParentFees />) },
+      { path: "inbox", element: lazyPage(<NotificationsInbox />) },
+      { path: "profile", element: lazyPage(<ParentProfile />) },
+    ],
+  },
+  { path: "/portal", element: <Navigate to="/portal/student" replace /> },
+  { path: "/parent", element: <Navigate to="/portal/parent" replace /> },
   { path: "*", element: <Navigate to="/login" replace /> },
 ]);

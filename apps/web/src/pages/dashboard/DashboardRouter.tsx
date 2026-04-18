@@ -6,8 +6,8 @@ import { TeacherDashboard } from "./TeacherDashboard";
 export function DashboardRouter() {
   const role = useAuthStore((s) => s.user?.role);
 
-  if (role === "STUDENT") return <Navigate to="/portal" replace />;
-  if (role === "PARENT") return <Navigate to="/parent" replace />;
+  if (role === "STUDENT") return <Navigate to="/portal/student" replace />;
+  if (role === "PARENT") return <Navigate to="/portal/parent" replace />;
   if (role === "TEACHER") return <TeacherDashboard />;
   return <AdminDashboard />;
 }

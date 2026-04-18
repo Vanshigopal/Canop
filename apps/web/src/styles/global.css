@@ -43,11 +43,26 @@
   }
   button {
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
 
   a {
     color: inherit;
     text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Portal inputs: 16px minimum to prevent iOS zoom on focus. */
+  [data-portal] input,
+  [data-portal] textarea,
+  [data-portal] select {
+    font-size: 16px;
+  }
+
+  /* Prevent rubber-band scroll on portal screens; main scroll container handles it. */
+  html,
+  body {
+    overscroll-behavior-y: none;
   }
 }
 

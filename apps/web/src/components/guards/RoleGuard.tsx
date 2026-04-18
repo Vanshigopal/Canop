@@ -10,8 +10,9 @@ interface RoleGuardProps {
 const ROLE_REDIRECT: Record<string, string> = {
   ADMIN: "/dashboard",
   TEACHER: "/dashboard",
-  STUDENT: "/portal",
-  PARENT: "/parent",
+  STAFF: "/dashboard",
+  STUDENT: "/portal/student",
+  PARENT: "/portal/parent",
 };
 
 export function RoleGuard({ roles, children }: RoleGuardProps) {

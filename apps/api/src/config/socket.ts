@@ -41,6 +41,7 @@ export function initializeSocket(httpServer: HttpServer): SocketIOServer {
   io.on("connection", (socket: Socket) => {
     const s = socket as AuthedSocket;
     socket.join(`tenant:${s.data.tenantId}`);
+    socket.join(`user:${s.data.userId}`);
     console.log(`[socket] connected user=${s.data.userId} tenant=${s.data.tenantId}`);
 
     socket.on("qr:join", (sessionId: string) => {
@@ -75,4 +76,9 @@ export function emitToTenant(tenantId: string, event: string, payload: unknown) 
 export function emitToQrRoom(tenantId: string, sessionId: string, event: string, payload: unknown) {
   if (!io) return;
   io.to(`tenant:${tenantId}:qr:${sessionId}`).emit(event, payload);
+}
+
+export function emitToUser(userId: string, event: string, payload: unknown) {
+  if (!io) return;
+  io.to(`user:${userId}`).emit(event, payload);
 }
