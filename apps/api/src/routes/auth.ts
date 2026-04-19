@@ -332,6 +332,55 @@ authRouter.delete(
   }),
 );
 
+// ── POST /device-token ───────────────────────────────────
+// Register an FCM/APNS/Web push token for the authenticated user.
+// One token per (user, device) — upserts if device already registered.
+
+const DeviceTokenSchema = z.object({
+  token: z.string().min(1).max(500),
+  platform: z.enum(["android", "ios", "web", "desktop"]),
+  deviceId: z.string().min(1).max(100),
+});
+
+authRouter.post(
+  "/device-token",
+  authenticate,
+  validate(DeviceTokenSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { token, platform, deviceId } = req.body as z.infer<typeof DeviceTokenSchema>;
+
+    if (!req.tenantId) throw Errors.tenantNotFound("unknown");
+
+    await prisma.deviceToken.upsert({
+      where: { userId_deviceId: { userId: req.user!.id, deviceId } },
+      update: { token, platform },
+      create: {
+        tenantId: req.tenantId,
+        userId: req.user!.id,
+        token,
+        platform,
+        deviceId,
+      },
+    });
+
+    return ok(res, { success: true });
+  }),
+);
+
+// ── DELETE /device-token/:deviceId ───────────────────────
+
+authRouter.delete(
+  "/device-token/:deviceId",
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const deviceId = req.params.deviceId as string;
+    await prisma.deviceToken.deleteMany({
+      where: { userId: req.user!.id, deviceId },
+    });
+    return ok(res, { success: true });
+  }),
+);
+
 // ── POST /forgot-password ────────────────────────────────
 
 authRouter.post(

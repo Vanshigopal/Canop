@@ -1,0 +1,56 @@
+{
+  "appId": "app.raquel.desktop",
+  "productName": "Raquel",
+  "copyright": "Copyright \u00A9 2026 Raquel",
+  "directories": {
+    "output": "release",
+    "buildResources": "resources"
+  },
+  "files": [
+    "dist/**/*",
+    "renderer/**/*",
+    "resources/**/*",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "../web/dist",
+      "to": "renderer",
+      "filter": ["**/*"]
+    }
+  ],
+  "win": {
+    "target": [
+      { "target": "nsis", "arch": ["x64"] }
+    ],
+    "icon": "resources/icon.ico",
+    "publisherName": "Raquel"
+  },
+  "mac": {
+    "target": [
+      { "target": "dmg", "arch": ["x64", "arm64"] }
+    ],
+    "icon": "resources/icon.png",
+    "category": "public.app-category.education",
+    "hardenedRuntime": true
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "resources/icon.png",
+    "category": "Education",
+    "maintainer": "Raquel <support@raquel.app>"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Raquel"
+  },
+  "publish": {
+    "provider": "generic",
+    "url": "https://updates.raquel.app",
+    "channel": "latest"
+  }
+}

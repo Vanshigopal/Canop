@@ -11,6 +11,23 @@
     },
     "typecheck": { "dependsOn": ["^typecheck"] },
     "lint": {},
-    "clean": { "cache": false }
+    "clean": { "cache": false },
+    "@raquel/mobile#typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "@raquel/mobile#android": {
+      "cache": false,
+      "persistent": true
+    },
+    "@raquel/mobile#build:android": {
+      "outputs": ["android/app/build/outputs/**"]
+    },
+    "@raquel/desktop#typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "@raquel/desktop#build": {
+      "dependsOn": ["@raquel/web#build"],
+      "outputs": ["release/**", "dist/**"]
+    }
   }
 }

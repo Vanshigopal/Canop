@@ -1,0 +1,29 @@
+{
+  "name": "@raquel/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Raquel — Electron desktop app for Windows / macOS / Linux",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build:main": "tsc",
+    "build": "tsc && electron-builder",
+    "build:win": "tsc && electron-builder --win",
+    "build:mac": "tsc && electron-builder --mac",
+    "build:linux": "tsc && electron-builder --linux",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.4",
+    "electron-store": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "electron": "^32.1.0",
+    "electron-builder": "^25.0.5",
+    "typescript": "^5.5.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -323,6 +323,7 @@ model User {
   gradedSubmissions        AssignmentSubmission[]  @relation("SubmissionGrader")
   dashboardLayout          DashboardLayout?
   exportJobs               ExportJob[]
+  deviceTokens             DeviceToken[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1773,4 +1774,26 @@ model AssignmentBatchAccess {
   @@index([tenantId])
   @@index([batchId])
   @@map("assignment_batch_access")
+}
+
+// ════════════════════════════════════════════════════════
+// DEVICE TOKENS (FCM / push notifications)
+// ════════════════════════════════════════════════════════
+
+model DeviceToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @db.VarChar(500)
+  platform  String   @db.VarChar(20)
+  deviceId  String   @map("device_id") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("device_tokens")
 }

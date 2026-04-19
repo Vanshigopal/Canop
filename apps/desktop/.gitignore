@@ -1,0 +1,17 @@
+node_modules/
+dist/
+release/
+
+# OSX
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Build artifacts
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.snap
