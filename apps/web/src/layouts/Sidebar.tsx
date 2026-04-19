@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@canop/ui";
-import { BrandMark } from "@/components/brand/BrandMark";
 import { useAuthStore } from "@/stores/auth";
 import { useSidebarStore } from "@/stores/sidebar";
 import { useStatsStore } from "@/stores/stats";
@@ -67,7 +66,6 @@ export function Sidebar({ className, forceExpanded }: SidebarProps) {
       {/* Brand */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3 min-w-0">
-          <BrandMark size={isCollapsed ? 36 : 40} />
           {!isCollapsed && (
             <span
               className="text-text-primary truncate"

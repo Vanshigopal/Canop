@@ -1,4 +1,3 @@
-import { BrandMark } from "@/components/brand/BrandMark";
 import { AuroraBackground } from "@/components/layout/AuroraBackground";
 import { Button } from "@/components/primitives";
 import { api } from "@/lib/api";
@@ -83,9 +82,6 @@ export function AttendanceScanPage() {
     <div className="min-h-screen relative flex items-center justify-center p-6">
       <AuroraBackground />
       <div className="relative z-10 w-full max-w-md">
-        <div className="flex justify-center mb-6">
-          <BrandMark />
-        </div>
         <div className="glass-panel p-8">
           {state.kind === "loading" && <LoadingState />}
           {state.kind === "needs-auth" && (

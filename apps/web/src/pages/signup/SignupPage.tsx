@@ -1,4 +1,3 @@
-import { BrandMark } from "@/components/brand/BrandMark";
 import { PoweredByCanop } from "@/components/brand/PoweredByCanop";
 import { AuroraBackground } from "@/components/layout/AuroraBackground";
 import { Button } from "@/components/primitives";
@@ -10,8 +9,7 @@ export function SignupPage() {
       <AuroraBackground />
       <main className={s.shell}>
         <div className={`${s.card} glass-panel animate-fade-up`}>
-          <BrandMark size={48} />
-          <h1 className="font-display text-3xl tracking-tight mt-3 mb-2">
+          <h1 className="font-display text-3xl tracking-tight mb-2">
             Start your <span className="italic text-coral">institute.</span>
           </h1>
           <p className="text-text-muted text-sm">

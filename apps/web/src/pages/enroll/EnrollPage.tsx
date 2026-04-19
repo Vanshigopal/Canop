@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BrandMark } from "@/components/brand/BrandMark";
 import { Button, Input } from "@/components/primitives";
 import axios from "axios";
 
@@ -108,8 +107,7 @@ export function EnrollPage() {
     return (
       <div className="min-h-screen bg-bg-base flex items-center justify-center p-6">
         <div className="glass-panel p-8 max-w-sm text-center">
-          <BrandMark size={48} />
-          <h2 className="font-display text-xl mt-4 mb-2">Invalid Link</h2>
+          <h2 className="font-display text-xl mb-2">Invalid Link</h2>
           <p className="text-sm text-text-muted">{info?.message || "This invitation link is no longer valid."}</p>
         </div>
       </div>
@@ -138,12 +136,9 @@ export function EnrollPage() {
   return (
     <div className="min-h-screen bg-bg-base py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <BrandMark size={40} />
-          <div>
-            <h1 className="font-display text-xl tracking-tight">{info.tenantName}</h1>
-            {info.batchName && <p className="text-2xs text-text-dim">{info.className} &middot; {info.batchName}</p>}
-          </div>
+        <div className="mb-6">
+          <h1 className="font-display text-xl tracking-tight">{info.tenantName}</h1>
+          {info.batchName && <p className="text-2xs text-text-dim">{info.className} &middot; {info.batchName}</p>}
         </div>
 
         <div className="glass-panel p-6 sm:p-8">

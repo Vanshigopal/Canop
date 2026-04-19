@@ -1,4 +1,3 @@
-import { BrandMark } from "@/components/brand/BrandMark";
 import { OTPInput } from "@/components/primitives/OTPInput";
 import { Button, Input } from "@/components/primitives";
 import { useAuthStore } from "@/stores/auth";
@@ -113,49 +112,40 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* ── Left brand panel ── */}
-      <div className="hidden md:flex w-[48%] relative bg-[#1a1717] overflow-hidden flex-col justify-between p-10 lg:p-14">
-        {/* Aurora blobs */}
-        <div aria-hidden className="absolute inset-0 overflow-hidden">
-          <div
-            className="absolute animate-drift rounded-full opacity-30"
-            style={{ width: 500, height: 500, background: "#FDA4AF", filter: "blur(140px)", top: -100, left: -80 }}
-          />
-          <div
-            className="absolute animate-drift rounded-full opacity-25"
-            style={{ width: 420, height: 420, background: "#BAE6FD", filter: "blur(140px)", bottom: -60, right: -80, animationDelay: "-8s" }}
-          />
-          <div
-            className="absolute animate-drift rounded-full opacity-20"
-            style={{ width: 350, height: 350, background: "#FED7AA", filter: "blur(140px)", top: "40%", left: "30%", animationDelay: "-15s" }}
-          />
-        </div>
-
-        <div className="relative z-10">
-          <BrandMark size={56} />
-          <h2 className="font-display text-white text-[2.2rem] lg:text-[2.6rem] leading-[1.1] tracking-tight mt-8">
-            The AI brain your
-            <br />
-            institute <span className="italic text-[#FDA4AF]">runs on.</span>
-          </h2>
-          <p className="text-white/50 text-sm mt-4 max-w-[340px] leading-relaxed">
-            One platform for admissions, academics, finance, and communication.
-          </p>
-        </div>
-
-        <div className="relative z-10" />
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 sm:p-10 bg-[#faf7f2]">
+      {/* Logo block — shown once, above the form */}
+      <div className="flex flex-col items-center mb-8">
+        <img
+          src="/logo.svg"
+          alt="Canop"
+          className="w-[120px] h-[120px] mb-4"
+        />
+        <h1
+          className="text-[32px] leading-none"
+          style={{
+            fontFamily: "'Fraunces', serif",
+            fontStyle: "italic",
+            fontWeight: 400,
+            letterSpacing: "7px",
+            color: "#2C2C2A",
+          }}
+        >
+          Canop
+        </h1>
+        <p
+          className="text-[10px] mt-3"
+          style={{
+            fontFamily: "'Manrope', sans-serif",
+            letterSpacing: "4px",
+            color: "#818CF8",
+            opacity: 0.4,
+          }}
+        >
+          NAVIGATE YOUR POTENTIAL
+        </p>
       </div>
 
-      {/* ── Right form panel ── */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 bg-[#faf7f2]">
-        {/* Mobile brand bar */}
-        <div className="md:hidden flex items-center gap-3 mb-8">
-          <BrandMark size={36} />
-          <span className="font-display text-xl tracking-tight">Canop</span>
-        </div>
-
-        <div className="w-full max-w-[400px] animate-fade-up">
+      <div className="w-full max-w-[400px] animate-fade-up">
           {/* Tab switcher */}
           <div className="flex rounded-xl bg-[#f0ebe4] p-1 mb-6">
             <button
@@ -338,12 +328,11 @@ export function LoginPage() {
             </form>
           )}
 
-          {/* Footer link */}
-          <div className="mt-8 text-center">
-            <a href="/signup" className="text-xs text-indigo font-medium hover:underline">
-              New institute? Request a demo →
-            </a>
-          </div>
+        {/* Footer link */}
+        <div className="mt-8 text-center">
+          <a href="/signup" className="text-xs text-indigo font-medium hover:underline">
+            New institute? Request a demo →
+          </a>
         </div>
       </div>
     </div>
