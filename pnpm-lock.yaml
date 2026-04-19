@@ -32,15 +32,15 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1032.0
         version: 3.1032.0
+      '@canop/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@canop/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@prisma/client':
         specifier: ^5.22.0
         version: 5.22.0(prisma@5.22.0)
-      '@raquel/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@raquel/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@sentry/node':
         specifier: ^10.49.0
         version: 10.49.0
@@ -302,18 +302,18 @@ importers:
 
   apps/web:
     dependencies:
+      '@canop/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@canop/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@canop/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.72.1(react@18.3.1))
-      '@raquel/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
-      '@raquel/types':
-        specifier: workspace:*
-        version: link:../../packages/types
-      '@raquel/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@sentry/react':
         specifier: ^10.49.0
         version: 10.49.0(react@18.3.1)
@@ -433,7 +433,7 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@raquel/types':
+      '@canop/types':
         specifier: workspace:*
         version: link:../types
       axios:

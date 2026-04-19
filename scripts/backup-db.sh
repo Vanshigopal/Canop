@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ══════════════════════════════════════════════════════════
-#  Raquel — Daily Database Backup
+#  Canop — Daily Database Backup
 #  Run via cron: 0 2 * * * /path/to/backup-db.sh
 # ══════════════════════════════════════════════════════════
 set -euo pipefail
@@ -10,13 +10,13 @@ if [ -z "${DATABASE_URL:-}" ]; then
   exit 1
 fi
 
-BACKUP_DIR="${BACKUP_DIR:-/var/backups/raquel}"
+BACKUP_DIR="${BACKUP_DIR:-/var/backups/canop}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 
 mkdir -p "$BACKUP_DIR"
 
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
-FILENAME="raquel_backup_${TIMESTAMP}.sql.gz"
+FILENAME="canop_backup_${TIMESTAMP}.sql.gz"
 FILEPATH="$BACKUP_DIR/$FILENAME"
 
 echo "[backup] Starting: $FILENAME"
@@ -26,7 +26,7 @@ SIZE="$(du -h "$FILEPATH" | cut -f1)"
 echo "[backup] Completed: $FILEPATH ($SIZE)"
 
 # Prune old backups
-DELETED=$(find "$BACKUP_DIR" -name "raquel_backup_*.sql.gz" -mtime +"$RETENTION_DAYS" -print -delete | wc -l)
+DELETED=$(find "$BACKUP_DIR" -name "canop_backup_*.sql.gz" -mtime +"$RETENTION_DAYS" -print -delete | wc -l)
 echo "[backup] Pruned $DELETED backup(s) older than $RETENTION_DAYS days"
 
 # Optional: upload to S3/R2

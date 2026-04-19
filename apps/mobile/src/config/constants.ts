@@ -4,12 +4,12 @@
 
 export const API_URL = __DEV__
   ? 'http://10.0.2.2:3001/api/v1'
-  : 'https://api.raquel.app/api/v1';
+  : 'https://api.canop.app/api/v1';
 
 export const WS_URL = __DEV__
   ? 'http://10.0.2.2:3001'
-  : 'https://api.raquel.app';
+  : 'https://api.canop.app';
 
 export const APP_VERSION = '0.1.0';
-export const APP_NAME = 'Raquel';
+export const APP_NAME = 'Canop';
 export const PLATFORM = 'android';

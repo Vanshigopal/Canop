@@ -1,4 +1,4 @@
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 
 export type LLMMode = "DISABLED" | "PLATFORM_KEY" | "BRING_YOUR_OWN_KEY";
 
@@ -17,12 +17,12 @@ const MODES: { value: LLMMode; title: string; description: string }[] = [
   {
     value: "PLATFORM_KEY",
     title: "Platform Key",
-    description: "Use Raquel's managed AI. Usage billed to your institute at cost + margin.",
+    description: "Use Canop's managed AI. Usage billed to your institute at cost + margin.",
   },
   {
     value: "BRING_YOUR_OWN_KEY",
     title: "Bring Your Own Key",
-    description: "Supply your own Anthropic API key. Raquel charges nothing for AI usage.",
+    description: "Supply your own Anthropic API key. Canop charges nothing for AI usage.",
   },
 ];
 
@@ -60,7 +60,7 @@ export function ModeSelector({ value, onChange, platformKeyAvailable }: ModeSele
                 <div className="text-xs text-text-muted mt-0.5">{m.description}</div>
                 {disabled && (
                   <div className="mt-1 text-2xs text-warning font-mono uppercase tracking-wider">
-                    Platform key not configured — ask your Raquel contact
+                    Platform key not configured — ask your Canop contact
                   </div>
                 )}
               </div>

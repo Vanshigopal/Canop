@@ -24,7 +24,7 @@ import {
   QrVerifySchema,
   UpdateAttendanceRecordSchema,
   UpdateAttendanceSessionSchema,
-} from "@raquel/types";
+} from "@canop/types";
 import { Router } from "express";
 
 export const attendanceRouter = Router();
@@ -133,7 +133,7 @@ attendanceRouter.post(
   validate(CreateAttendanceSessionSchema),
   async (req, res) => {
     const tenantId = req.user!.tenantId;
-    const body = req.body as import("@raquel/types").CreateAttendanceSession;
+    const body = req.body as import("@canop/types").CreateAttendanceSession;
 
     const batch = await prisma.batch.findFirst({
       where: { id: body.batchId, tenantId, deletedAt: null },
@@ -351,7 +351,7 @@ attendanceRouter.post(
     const session = await getSessionOrThrow(id, tenantId);
     ensureEditable(session);
 
-    const body = req.body as import("@raquel/types").MarkAttendance;
+    const body = req.body as import("@canop/types").MarkAttendance;
     const { deviceInfo, ipAddress } = clientDeviceInfo(req);
 
     const record = await withTenantTransaction(prisma, tenantId, async (tx) => {
@@ -401,7 +401,7 @@ attendanceRouter.post(
     const session = await getSessionOrThrow(id, tenantId);
     ensureEditable(session);
 
-    const body = req.body as import("@raquel/types").BulkMarkAttendance;
+    const body = req.body as import("@canop/types").BulkMarkAttendance;
     const { deviceInfo, ipAddress } = clientDeviceInfo(req);
 
     const records = await withTenantTransaction(prisma, tenantId, async (tx) => {
@@ -457,7 +457,7 @@ attendanceRouter.post(
     const tenantId = req.user!.tenantId;
     const session = await getSessionOrThrow(id, tenantId);
     ensureEditable(session);
-    const body = req.body as import("@raquel/types").MarkAllAttendance;
+    const body = req.body as import("@canop/types").MarkAllAttendance;
 
     const students = await prisma.student.findMany({
       where: { tenantId, batchId: session.batchId, deletedAt: null },
@@ -528,7 +528,7 @@ attendanceRouter.post(
     const session = await getSessionOrThrow(id, tenantId);
     ensureEditable(session);
 
-    const body = req.body as import("@raquel/types").AddGuestStudent;
+    const body = req.body as import("@canop/types").AddGuestStudent;
 
     const student = await prisma.student.findFirst({
       where: { id: body.studentId, tenantId, deletedAt: null },
@@ -778,7 +778,7 @@ attendanceRouter.post(
   validate(QrVerifySchema),
   async (req, res) => {
     const tenantId = req.user!.tenantId;
-    const { qrCode } = req.body as import("@raquel/types").QrVerify;
+    const { qrCode } = req.body as import("@canop/types").QrVerify;
 
     const data = await lookupQrToken(qrCode);
     if (!data || data.tenantId !== tenantId) {

@@ -12,21 +12,21 @@
     "typecheck": { "dependsOn": ["^typecheck"] },
     "lint": {},
     "clean": { "cache": false },
-    "@raquel/mobile#typecheck": {
+    "@canop/mobile#typecheck": {
       "dependsOn": ["^build"]
     },
-    "@raquel/mobile#android": {
+    "@canop/mobile#android": {
       "cache": false,
       "persistent": true
     },
-    "@raquel/mobile#build:android": {
+    "@canop/mobile#build:android": {
       "outputs": ["android/app/build/outputs/**"]
     },
-    "@raquel/desktop#typecheck": {
+    "@canop/desktop#typecheck": {
       "dependsOn": ["^build"]
     },
-    "@raquel/desktop#build": {
-      "dependsOn": ["@raquel/web#build"],
+    "@canop/desktop#build": {
+      "dependsOn": ["@canop/web#build"],
       "outputs": ["release/**", "dist/**"]
     }
   }

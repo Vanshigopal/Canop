@@ -1,8 +1,8 @@
 {
-  "name": "Raquel",
-  "displayName": "Raquel",
+  "name": "Canop",
+  "displayName": "Canop",
   "version": "0.1.0",
   "android": {
-    "package": "app.raquel.mobile"
+    "package": "app.canop.mobile"
   }
 }

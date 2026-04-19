@@ -27,7 +27,7 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ['raquel://', 'https://raquel.app', 'https://*.raquel.app'],
+  prefixes: ['canop://', 'https://canop.app', 'https://*.canop.app'],
   config: {
     screens: {
       TenantSelect: 'tenant',

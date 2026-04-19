@@ -7,7 +7,7 @@ import { AppError, Errors } from "@/lib/errors";
  *
  * Expected patterns:
  *   demo.lvh.me:5173       -> slug = "demo"
- *   demo.raquel.app        -> slug = "demo"
+ *   demo.canop.app        -> slug = "demo"
  *   localhost:3001          -> slug from X-Tenant-Slug header (dev fallback)
  *
  * Attaches tenant to req.tenant if found.
@@ -57,7 +57,7 @@ export async function tenantMiddleware(
 }
 
 function extractTenantSlug(req: Request): string | null {
-  const host = req.hostname; // e.g., "demo.lvh.me" or "demo.raquel.app"
+  const host = req.hostname; // e.g., "demo.lvh.me" or "demo.canop.app"
 
   // Dev: explicit header override
   const headerSlug = req.headers["x-tenant-slug"] as string | undefined;
@@ -65,7 +65,7 @@ function extractTenantSlug(req: Request): string | null {
 
   // Production/dev: extract from subdomain
   // "demo.lvh.me" -> "demo"
-  // "demo.raquel.app" -> "demo"
+  // "demo.canop.app" -> "demo"
   // "localhost" -> null (no subdomain)
   const parts = host.split(".");
 

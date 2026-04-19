@@ -163,7 +163,7 @@ export function CreateTenantModal({
                   className="flex-1 px-3 py-2 border border-slate-200 rounded-md text-sm font-mono"
                   placeholder="abc-coaching"
                 />
-                <span className="text-xs text-slate-400">.raquel.app</span>
+                <span className="text-xs text-slate-400">.canop.app</span>
               </div>
             </Field>
 

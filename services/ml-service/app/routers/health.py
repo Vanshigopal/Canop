@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.get("/health")
 async def health():
-    return {"status": "ok", "service": "raquel-ml-service", "version": "0.1.0"}
+    return {"status": "ok", "service": "canop-ml-service", "version": "0.1.0"}
 
 
 @router.get("/ready")

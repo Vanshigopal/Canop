@@ -1,4 +1,4 @@
-# Raquel Mobile (Android)
+# Canop Mobile (Android)
 
 React Native app for Android. Material Design 3 throughout.
 
@@ -36,7 +36,7 @@ $EDITOR apps/mobile/src/config/constants.ts
 # Set API_URL to where your backend runs.
 # - Android emulator -> http://10.0.2.2:3001/api/v1
 # - Physical device  -> http://<your-LAN-IP>:3001/api/v1
-# - Production       -> https://api.your-tenant.raquel.app/api/v1
+# - Production       -> https://api.your-tenant.canop.app/api/v1
 ```
 
 ## Running in development
@@ -76,7 +76,7 @@ For Play Store distribution, build an Android App Bundle instead:
 ## Firebase setup (for push notifications)
 
 1. Create a Firebase project at https://console.firebase.google.com
-2. Add an Android app with the package name `app.raquel.mobile`
+2. Add an Android app with the package name `app.canop.mobile`
 3. Download `google-services.json` and drop it into `apps/mobile/android/app/`
 4. The Gradle plugin auto-applies whenever that file is present
 5. Push notifications are wired through `src/services/notifications.ts`

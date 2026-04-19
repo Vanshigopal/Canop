@@ -82,7 +82,7 @@ export function PortalLayout() {
               fontWeight: 500,
             }}
           >
-            {tenant?.name ?? "Raquel"}
+            {tenant?.name ?? "Canop"}
           </div>
           <button
             type="button"

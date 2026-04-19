@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { hashSync } from "bcryptjs";
 import { Router } from "express";
-import { CreateTeacherSchema, UpdateTeacherSchema } from "@raquel/types";
+import { CreateTeacherSchema, UpdateTeacherSchema } from "@canop/types";
 import { prisma, withTenantTransaction } from "@/config/db";
 import { Errors } from "@/lib/errors";
 import { ok, created } from "@/lib/response";

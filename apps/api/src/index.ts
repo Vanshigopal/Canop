@@ -183,12 +183,12 @@ async function start() {
   initializeSocket(httpServer);
   httpServer.listen(env.PORT, () => {
     console.log(
-      `[raquel-api] listening on http://localhost:${env.PORT} (${env.NODE_ENV})`,
+      `[canop-api] listening on http://localhost:${env.PORT} (${env.NODE_ENV})`,
     );
   });
 
   const shutdown = () => {
-    console.log("[raquel-api] shutting down...");
+    console.log("[canop-api] shutting down...");
     redis.disconnect();
     httpServer.close(() => process.exit(0));
   };
@@ -197,6 +197,6 @@ async function start() {
 }
 
 start().catch((err) => {
-  console.error("[raquel-api] failed to start:", err);
+  console.error("[canop-api] failed to start:", err);
   process.exit(1);
 });

@@ -1,4 +1,4 @@
-import { tokens } from "@raquel/ui/tokens";
+import { tokens } from "@canop/ui/tokens";
 import type { Config } from "tailwindcss";
 
 const config: Config = {

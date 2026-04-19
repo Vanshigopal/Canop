@@ -1,4 +1,4 @@
-package app.raquel.mobile
+package app.canop.mobile
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -11,7 +11,7 @@ class MainActivity : ReactActivity() {
      * Returns the name of the main component registered from JavaScript. Must
      * match `appName` in app.json + AppRegistry.registerComponent in index.js.
      */
-    override fun getMainComponentName(): String = "Raquel"
+    override fun getMainComponentName(): String = "Canop"
 
     /**
      * Returns the instance of [ReactActivityDelegate]. We use

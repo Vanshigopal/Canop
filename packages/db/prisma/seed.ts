@@ -22,7 +22,7 @@ async function main() {
       name: "Demo Institute",
       status: "ACTIVE",
       tier: "PROFESSIONAL",
-      tagline: "A demonstration institute for exploring Raquel",
+      tagline: "A demonstration institute for exploring Canop",
       timezone: "Asia/Kolkata",
     },
   });
@@ -44,25 +44,25 @@ async function main() {
 
   // ── Users ──
   const demoAdmin = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: demoTenant.id, email: "admin@demo.raquel.app" } },
+    where: { tenantId_email: { tenantId: demoTenant.id, email: "admin@demo.canop.app" } },
     update: {},
     create: {
       tenantId: demoTenant.id,
-      email: "admin@demo.raquel.app",
+      email: "admin@demo.canop.app",
       passwordHash: hashPassword("password123"),
       name: "Demo Admin",
       role: "ADMIN",
       phone: "+919876543210",
     },
   });
-  console.log("[seed] User: admin@demo.raquel.app / password123");
+  console.log("[seed] User: admin@demo.canop.app / password123");
 
   await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: testTenant.id, email: "admin@test.raquel.app" } },
+    where: { tenantId_email: { tenantId: testTenant.id, email: "admin@test.canop.app" } },
     update: {},
     create: {
       tenantId: testTenant.id,
-      email: "admin@test.raquel.app",
+      email: "admin@test.canop.app",
       passwordHash: hashPassword("password123"),
       name: "Test Admin",
       role: "ADMIN",
@@ -70,25 +70,25 @@ async function main() {
   });
 
   const demoTeacher = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: demoTenant.id, email: "teacher@demo.raquel.app" } },
+    where: { tenantId_email: { tenantId: demoTenant.id, email: "teacher@demo.canop.app" } },
     update: {},
     create: {
       tenantId: demoTenant.id,
-      email: "teacher@demo.raquel.app",
+      email: "teacher@demo.canop.app",
       passwordHash: hashPassword("password123"),
       name: "Dr. Mehta",
       role: "TEACHER",
       phone: "+919876543211",
     },
   });
-  console.log("[seed] User: teacher@demo.raquel.app / password123 (TEACHER)");
+  console.log("[seed] User: teacher@demo.canop.app / password123 (TEACHER)");
 
   const demoParent = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: demoTenant.id, email: "parent@demo.raquel.app" } },
+    where: { tenantId_email: { tenantId: demoTenant.id, email: "parent@demo.canop.app" } },
     update: {},
     create: {
       tenantId: demoTenant.id,
-      email: "parent@demo.raquel.app",
+      email: "parent@demo.canop.app",
       name: "Rajesh Kumar",
       role: "PARENT",
       phone: "+919876543212",
@@ -96,11 +96,11 @@ async function main() {
   });
 
   const demoStudent = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: demoTenant.id, email: "student@demo.raquel.app" } },
+    where: { tenantId_email: { tenantId: demoTenant.id, email: "student@demo.canop.app" } },
     update: {},
     create: {
       tenantId: demoTenant.id,
-      email: "student@demo.raquel.app",
+      email: "student@demo.canop.app",
       name: "Aarav Kumar",
       role: "STUDENT",
       phone: "+919876543213",
@@ -268,7 +268,7 @@ async function main() {
       name: "Rajesh Kumar",
       relation: "FATHER",
       phone: "+919876543212",
-      email: "parent@demo.raquel.app",
+      email: "parent@demo.canop.app",
       isEmergency: true,
     },
   });
@@ -330,11 +330,11 @@ async function main() {
 
   // ── Extra student for cross-batch attendance demo ──
   const demoStudent2 = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: demoTenant.id, email: "student2@demo.raquel.app" } },
+    where: { tenantId_email: { tenantId: demoTenant.id, email: "student2@demo.canop.app" } },
     update: {},
     create: {
       tenantId: demoTenant.id,
-      email: "student2@demo.raquel.app",
+      email: "student2@demo.canop.app",
       name: "Sneha Patel",
       role: "STUDENT",
       phone: "+919876543214",
@@ -742,7 +742,7 @@ async function main() {
       eventType: "teacher_welcome",
       channel: "EMAIL",
       subject: "Welcome to {institute_name}",
-      body: "Welcome to {institute_name}! Your account has been created. Login at your institute's Raquel portal to get started.",
+      body: "Welcome to {institute_name}! Your account has been created. Login at your institute's Canop portal to get started.",
     },
     {
       name: "Retest Scheduled",

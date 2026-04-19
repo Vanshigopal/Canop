@@ -30,7 +30,7 @@ export function TenantSelectScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Welcome to Raquel</Text>
+        <Text style={styles.title}>Welcome to Canop</Text>
         <Text style={styles.subtitle}>Enter your institute code to get started</Text>
 
         <View style={styles.form}>

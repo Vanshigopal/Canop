@@ -1,4 +1,4 @@
-import type { AuthPermissions, AuthTenant, AuthUser, LoginResponse } from "@raquel/types";
+import type { AuthPermissions, AuthTenant, AuthUser, LoginResponse } from "@canop/types";
 import { create } from "zustand";
 import { api, registerAuthInterceptors } from "@/lib/api";
 import { connectSocket, disconnectSocket } from "@/lib/socket";

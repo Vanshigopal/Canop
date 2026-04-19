@@ -52,7 +52,7 @@ export function PlatformAdminLayout() {
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-blue-400" />
               <div className="leading-tight">
-                <div className="text-sm font-semibold tracking-wide">RAQUEL</div>
+                <div className="text-sm font-semibold tracking-wide">CANOP</div>
                 <div className="text-[10px] text-blue-300 uppercase tracking-wider">
                   Platform Admin
                 </div>

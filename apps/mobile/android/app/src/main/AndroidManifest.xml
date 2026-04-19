@@ -33,18 +33,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep linking for raquel:// + https://*.raquel.app -->
+            <!-- Deep linking for canop:// + https://*.canop.app -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="*.raquel.app" />
+                <data android:scheme="https" android:host="*.canop.app" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="raquel" />
+                <data android:scheme="canop" />
             </intent-filter>
         </activity>
     </application>

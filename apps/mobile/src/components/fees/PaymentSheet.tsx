@@ -39,7 +39,7 @@ export function PaymentSheet({
         key: order.razorpayKey,
         amount: order.amount,
         currency: order.currency,
-        name: 'Raquel',
+        name: 'Canop',
         description: label,
         order_id: order.razorpayOrderId,
         prefill: {

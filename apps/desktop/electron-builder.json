@@ -1,7 +1,7 @@
 {
-  "appId": "app.raquel.desktop",
-  "productName": "Raquel",
-  "copyright": "Copyright \u00A9 2026 Raquel",
+  "appId": "app.canop.desktop",
+  "productName": "Canop",
+  "copyright": "Copyright \u00A9 2026 Canop",
   "directories": {
     "output": "release",
     "buildResources": "resources"
@@ -24,7 +24,7 @@
       { "target": "nsis", "arch": ["x64"] }
     ],
     "icon": "resources/icon.ico",
-    "publisherName": "Raquel"
+    "publisherName": "Canop"
   },
   "mac": {
     "target": [
@@ -38,7 +38,7 @@
     "target": ["AppImage", "deb"],
     "icon": "resources/icon.png",
     "category": "Education",
-    "maintainer": "Raquel <support@raquel.app>"
+    "maintainer": "Canop <support@canop.app>"
   },
   "nsis": {
     "oneClick": false,
@@ -46,11 +46,11 @@
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Raquel"
+    "shortcutName": "Canop"
   },
   "publish": {
     "provider": "generic",
-    "url": "https://updates.raquel.app",
+    "url": "https://updates.canop.app",
     "channel": "latest"
   }
 }

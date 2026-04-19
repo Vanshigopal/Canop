@@ -1,8 +1,8 @@
 {
-  "name": "@raquel/mobile",
+  "name": "@canop/mobile",
   "version": "0.1.0",
   "private": true,
-  "description": "Raquel — React Native Android app (coaching institute management)",
+  "description": "Canop — React Native Android app (coaching institute management)",
   "scripts": {
     "start": "react-native start",
     "android": "react-native run-android",

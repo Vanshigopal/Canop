@@ -49,7 +49,7 @@ function createWindow(): BrowserWindow {
     y: bounds.y,
     minWidth: 900,
     minHeight: 600,
-    title: 'Raquel',
+    title: 'Canop',
     icon: path.join(__dirname, '../../resources/icon.png'),
     backgroundColor: '#FAF7F2',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',

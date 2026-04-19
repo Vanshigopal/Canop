@@ -315,7 +315,7 @@ platformTenantsRouter.post("/", async (req, res) => {
       email: result.owner.email,
       name: result.owner.name,
     },
-    loginUrl: `https://${body.slug}.raquel.app`,
+    loginUrl: `https://${body.slug}.canop.app`,
   });
 });
 

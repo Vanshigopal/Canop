@@ -13,7 +13,7 @@ import {
   ScheduleRetestSchema,
   type EnterRetestMarks,
   type ScheduleRetest,
-} from "@raquel/types";
+} from "@canop/types";
 import { Router } from "express";
 
 export const retestsRouter = Router();

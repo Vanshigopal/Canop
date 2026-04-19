@@ -266,7 +266,7 @@ assignmentsRouter.post(
           assignment_name: assignment.title,
           deadline: deadlineStr,
           total_marks: String(assignment.totalMarks),
-          institute_name: tenant?.name ?? "Raquel",
+          institute_name: tenant?.name ?? "Canop",
         },
       });
     }
@@ -583,7 +583,7 @@ assignmentsRouter.post(
         assignment_name: submission.assignment.title,
         marks: marksValue,
         total_marks: String(submission.assignment.totalMarks),
-        institute_name: tenant?.name ?? "Raquel",
+        institute_name: tenant?.name ?? "Canop",
       },
     });
 
@@ -600,7 +600,7 @@ assignmentsRouter.post(
           assignment_name: submission.assignment.title,
           marks: marksValue,
           total_marks: String(submission.assignment.totalMarks),
-          institute_name: tenant?.name ?? "Raquel",
+          institute_name: tenant?.name ?? "Canop",
         },
       });
     }

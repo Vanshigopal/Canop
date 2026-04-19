@@ -17,7 +17,7 @@ export function initSentry() {
   Sentry.init({
     dsn: env.SENTRY_DSN,
     environment: env.NODE_ENV,
-    release: `raquel-api@${process.env.npm_package_version || "0.1.0"}`,
+    release: `canop-api@${process.env.npm_package_version || "0.1.0"}`,
     tracesSampleRate: env.NODE_ENV === "production" ? 0.1 : 1.0,
     beforeSend(event) {
       if (event.request?.headers) {

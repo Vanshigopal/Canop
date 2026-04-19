@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CreateBatchSchema, UpdateBatchSchema, BatchSubjectAssignSchema } from "@raquel/types";
+import { CreateBatchSchema, UpdateBatchSchema, BatchSubjectAssignSchema } from "@canop/types";
 import { prisma, withTenantTransaction } from "@/config/db";
 import { Errors } from "@/lib/errors";
 import { ok, created, paginated } from "@/lib/response";

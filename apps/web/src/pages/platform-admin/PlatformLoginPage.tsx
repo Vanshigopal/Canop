@@ -33,7 +33,7 @@ export function PlatformLoginPage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-3">
             <ShieldCheck className="w-8 h-8 text-blue-400" />
-            <span className="text-2xl font-semibold tracking-tight">RAQUEL</span>
+            <span className="text-2xl font-semibold tracking-tight">CANOP</span>
           </div>
           <div className="text-xs text-blue-300 uppercase tracking-[0.2em]">
             Platform Administration

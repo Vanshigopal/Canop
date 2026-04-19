@@ -1,4 +1,4 @@
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 import { Calendar } from "lucide-react";
 import {
   type ChangeEvent,

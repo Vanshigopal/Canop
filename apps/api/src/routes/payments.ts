@@ -9,7 +9,7 @@ import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
 import { notifySafe } from "@/services/notification.service";
 import type { Prisma } from "@prisma/client";
-import { RazorpayOrderSchema, RazorpayVerifySchema, RecordPaymentSchema } from "@raquel/types";
+import { RazorpayOrderSchema, RazorpayVerifySchema, RecordPaymentSchema } from "@canop/types";
 import { Router } from "express";
 import Razorpay from "razorpay";
 
@@ -239,7 +239,7 @@ paymentsRouter.post(
   validate(RecordPaymentSchema),
   async (req, res) => {
     const tenantId = req.user!.tenantId;
-    const body = req.body as import("@raquel/types").RecordPayment;
+    const body = req.body as import("@canop/types").RecordPayment;
 
     const fee = await prisma.studentFee.findFirst({
       where: { id: body.studentFeeId, tenantId },
@@ -300,7 +300,7 @@ paymentsRouter.post(
 
 paymentsRouter.post("/razorpay/order", validate(RazorpayOrderSchema), async (req, res) => {
   const tenantId = req.user!.tenantId;
-  const body = req.body as import("@raquel/types").RazorpayOrder;
+  const body = req.body as import("@canop/types").RazorpayOrder;
 
   const fee = await prisma.studentFee.findFirst({
     where: { id: body.studentFeeId, tenantId },
@@ -363,7 +363,7 @@ paymentsRouter.post("/razorpay/order", validate(RazorpayOrderSchema), async (req
 
 paymentsRouter.post("/razorpay/verify", validate(RazorpayVerifySchema), async (req, res) => {
   const tenantId = req.user!.tenantId;
-  const body = req.body as import("@raquel/types").RazorpayVerify;
+  const body = req.body as import("@canop/types").RazorpayVerify;
 
   const payment = await prisma.payment.findFirst({
     where: { razorpayOrderId: body.razorpayOrderId, tenantId },

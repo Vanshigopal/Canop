@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN groupadd -g 1001 raquel && useradd -u 1001 -g raquel -m -s /bin/bash raquel
+RUN groupadd -g 1001 canop && useradd -u 1001 -g canop -m -s /bin/bash canop
 
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
@@ -44,9 +44,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY app/ ./app/
 
 # Create trained models directory
-RUN mkdir -p /app/app/models/trained && chown -R raquel:raquel /app
+RUN mkdir -p /app/app/models/trained && chown -R canop:canop /app
 
-USER raquel
+USER canop
 
 ENV PYTHONUNBUFFERED=1
 ENV ENVIRONMENT=production

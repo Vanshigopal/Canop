@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-const STORAGE_KEY = "raquel:sidebar-collapsed";
+const STORAGE_KEY = "canop:sidebar-collapsed";
 
 interface SidebarState {
   collapsed: boolean;

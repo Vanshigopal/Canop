@@ -2,7 +2,7 @@ import { BrandMark } from "@/components/brand/BrandMark";
 import { OTPInput } from "@/components/primitives/OTPInput";
 import { Button, Input } from "@/components/primitives";
 import { useAuthStore } from "@/stores/auth";
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -152,7 +152,7 @@ export function LoginPage() {
         {/* Mobile brand bar */}
         <div className="md:hidden flex items-center gap-3 mb-8">
           <BrandMark size={36} />
-          <span className="font-display text-xl tracking-tight">Raquel</span>
+          <span className="font-display text-xl tracking-tight">Canop</span>
         </div>
 
         <div className="w-full max-w-[400px] animate-fade-up">
@@ -203,7 +203,7 @@ export function LoginPage() {
               <Input
                 label="Institute"
                 placeholder="demo"
-                suffix=".raquel.app"
+                suffix=".canop.app"
                 value={tenantSlug}
                 onChange={(e) => setTenantSlug(e.target.value)}
                 autoComplete="organization"
@@ -263,7 +263,7 @@ export function LoginPage() {
               <Input
                 label="Institute"
                 placeholder="demo"
-                suffix=".raquel.app"
+                suffix=".canop.app"
                 value={studentSlug}
                 onChange={(e) => setStudentSlug(e.target.value)}
                 autoComplete="organization"

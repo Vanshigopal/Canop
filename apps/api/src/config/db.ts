@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { withTenantTransaction } from "@raquel/db/client";
+import { withTenantTransaction } from "@canop/db/client";
 import { env } from "./env";
 
 // Singleton Prisma client for the API process

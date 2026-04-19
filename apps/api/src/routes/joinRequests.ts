@@ -86,7 +86,7 @@ joinRequestsRouter.post("/:id/approve", async (req, res) => {
   }
 
   const result = await withTenantTransaction(prisma, tenantId, async (tx) => {
-    const studentEmail = jr.studentEmail || `${jr.studentPhone.replace(/\+/g, "")}@student.raquel.app`;
+    const studentEmail = jr.studentEmail || `${jr.studentPhone.replace(/\+/g, "")}@student.canop.app`;
     const studentUser = await tx.user.create({
       data: {
         tenantId,
@@ -136,7 +136,7 @@ joinRequestsRouter.post("/:id/approve", async (req, res) => {
         where: { tenantId, phone: g.phone, role: "PARENT", deletedAt: null },
       });
       if (!parentUser) {
-        const parentEmail = g.email || `${g.phone.replace(/\+/g, "")}@parent.raquel.app`;
+        const parentEmail = g.email || `${g.phone.replace(/\+/g, "")}@parent.canop.app`;
         parentUser = await tx.user.create({
           data: { tenantId, email: parentEmail, name: g.name, role: "PARENT", phone: g.phone },
         });

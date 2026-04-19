@@ -1,2 +1,2 @@
-export { RaquelClient } from "./client";
-export type { RaquelClientOptions } from "./client";
+export { CanopClient } from "./client";
+export type { CanopClientOptions } from "./client";

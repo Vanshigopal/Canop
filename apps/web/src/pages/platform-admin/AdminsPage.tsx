@@ -36,7 +36,7 @@ export function AdminsPage() {
     <div>
       <PageHeader
         title="Platform Admins"
-        subtitle="Internal Raquel team members with access to the platform admin panel."
+        subtitle="Internal Canop team members with access to the platform admin panel."
         actions={
           me?.role === "SUPER_ADMIN" ? (
             <button

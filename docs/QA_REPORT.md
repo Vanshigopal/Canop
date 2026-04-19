@@ -1,4 +1,4 @@
-# Raquel Platform — QA Report
+# Canop Platform — QA Report
 
 **Generated:** 2026-04-19
 **Session:** 16.5 (Final QA)
@@ -50,7 +50,7 @@
 | Tenant isolation (RLS) | PASS | 52 tenant tables have RLS policies |
 | SQL injection prevention | PASS | Prisma parameterization — DROP TABLE attempts ignored |
 | XSS prevention | PASS | sanitize-html middleware strips `<script>` tags |
-| CORS config | PASS | Tightened to `*.raquel.app` in production |
+| CORS config | PASS | Tightened to `*.canop.app` in production |
 | Rate limiting | PASS | 10/15min auth, 200/min global — triggered in test |
 | Security headers | PASS | CSP, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy |
 | X-Powered-By absent | PASS | Fingerprint removed |
@@ -146,7 +146,7 @@ Environment variables referenced in code: 35 unique. Template contains all 35 + 
 ## Fixes Applied in This Session
 
 1. **passwordHash leak** — `/api/v1/teachers` list/detail/update endpoints now use `SAFE_USER_SELECT` (apps/api/src/lib/user-sanitize.ts) to whitelist fields. bcrypt hashes no longer serialized.
-2. **Invalid UUID error leak** — Prisma validation errors previously leaked file paths (`E:\\Raquel\\apps\\api\\src\\routes\\students.ts:69:40`). Error handler now detects Prisma validation errors (by name + message pattern) and returns clean `400 INVALID_INPUT`.
+2. **Invalid UUID error leak** — Prisma validation errors previously leaked file paths (`E:\\Canop\\apps\\api\\src\\routes\\students.ts:69:40`). Error handler now detects Prisma validation errors (by name + message pattern) and returns clean `400 INVALID_INPUT`.
 3. **Request ID in errors** — every `{ ok: false, error }` envelope now includes `requestId` (from `X-Request-ID` header or auto-generated UUID). Added via `withRequestId()` helper in `error-handler.ts`.
 4. **UUID param validation** — registered Express `app.param()` validators for common IDs (`id`, `studentId`, `batchId`, `examId`, etc.) in `middleware/validate-uuid.ts`. Second line of defense against bad UUIDs.
 5. **Strong password policy** — new `STRONG_PASSWORD` Zod schema in `lib/password-policy.ts` (min 8 chars + upper + lower + digit + special). Applied to:
@@ -159,7 +159,7 @@ Environment variables referenced in code: 35 unique. Template contains all 35 + 
 8. **Electron store typing** — fixed Session 15 `Store.get/set does not exist` error with generic `Store<StoreSchema>` definition (`apps/desktop/src/main/index.ts`).
 9. **Mobile tsconfig** — `moduleResolution` was `node`, conflicted with parent `customConditions`. Changed to `bundler` + stubbed missing `Event` type from `react-native-qrcode-scanner` + fixed VideosScreen navigation typing.
 10. **Missing web dep** — `react-resizable` added as direct dep (was transitive via `react-grid-layout`, failed Vite build).
-11. **Platform admin seed** — dev DB now has `vansh@raquel.app` super admin + 2 tenant subscriptions (`PROFESSIONAL`, `ACTIVE`).
+11. **Platform admin seed** — dev DB now has `vansh@canop.app` super admin + 2 tenant subscriptions (`PROFESSIONAL`, `ACTIVE`).
 12. **Prisma migrations applied** — 0013_device_tokens and 0014_platform_admin were pending; now applied.
 13. **Error handler robustness** — catches both `instanceof Prisma.PrismaClientValidationError` AND message-pattern match for hot-reload safety; also preserves `requestId`.
 

@@ -2,7 +2,7 @@ import { prisma, withTenantTransaction } from "@/config/db";
 import { ok } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
-import { UpdateNotificationConfigSchema } from "@raquel/types";
+import { UpdateNotificationConfigSchema } from "@canop/types";
 import { Router } from "express";
 
 export const notificationConfigRouter = Router();
@@ -26,7 +26,7 @@ notificationConfigRouter.patch(
   async (req, res) => {
     const tenantId = req.user!.tenantId;
     const userId = req.user!.id;
-    const body = req.body as import("@raquel/types").UpdateNotificationConfig;
+    const body = req.body as import("@canop/types").UpdateNotificationConfig;
 
     const saved = await withTenantTransaction(prisma, tenantId, async (tx) => {
       const out = [] as Awaited<ReturnType<typeof tx.notificationPreference.upsert>>[];

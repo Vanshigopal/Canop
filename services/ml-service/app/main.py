@@ -20,9 +20,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Raquel ML Service",
+    title="Canop ML Service",
     version="0.1.0",
-    description="Internal ML microservice for Raquel platform",
+    description="Internal ML microservice for Canop platform",
     lifespan=lifespan,
     docs_url="/docs" if settings.environment == "development" else None,
     redoc_url=None,

@@ -5,18 +5,18 @@ services:
     image: postgres:16-alpine
     restart: always
     environment:
-      POSTGRES_USER: ${DB_USER:-raquel}
+      POSTGRES_USER: ${DB_USER:-canop}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
-      POSTGRES_DB: ${DB_NAME:-raquel_prod}
+      POSTGRES_DB: ${DB_NAME:-canop_prod}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-raquel}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-canop}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - raquel_net
+      - canop_net
 
   redis:
     image: redis:7-alpine
@@ -30,7 +30,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - raquel_net
+      - canop_net
 
   api:
     build:
@@ -40,9 +40,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: "postgresql://${DB_USER:-raquel}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-raquel_prod}?schema=public&connection_limit=20"
+      DATABASE_URL: "postgresql://${DB_USER:-canop}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-canop_prod}?schema=public&connection_limit=20"
       REDIS_URL: redis://redis:6379
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://*.raquel.app}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://*.canop.app}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-900}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-604800}
@@ -62,10 +62,10 @@ services:
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
-      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-raquel-uploads}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-canop-uploads}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL}
       RESEND_API_KEY: ${RESEND_API_KEY}
-      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@raquel.app}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@canop.app}
       SENTRY_DSN: ${SENTRY_DSN}
     ports:
       - "3001:3001"
@@ -75,14 +75,14 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - raquel_net
+      - canop_net
 
   web:
     build:
       context: ../..
       dockerfile: apps/web/Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-https://api.raquel.app}
+        VITE_API_URL: ${VITE_API_URL:-https://api.canop.app}
         VITE_SENTRY_DSN: ${VITE_SENTRY_DSN}
         VITE_APP_VERSION: ${VITE_APP_VERSION:-0.1.0}
     restart: always
@@ -91,7 +91,7 @@ services:
     depends_on:
       - api
     networks:
-      - raquel_net
+      - canop_net
 
   ml-service:
     build:
@@ -99,7 +99,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     environment:
-      DATABASE_URL: "postgresql://${DB_USER:-raquel}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-raquel_prod}"
+      DATABASE_URL: "postgresql://${DB_USER:-canop}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-canop_prod}"
       ML_SERVICE_API_KEY: ${ML_SERVICE_API_KEY}
       ENVIRONMENT: production
     volumes:
@@ -108,7 +108,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - raquel_net
+      - canop_net
 
 volumes:
   pgdata:
@@ -116,5 +116,5 @@ volumes:
   mlmodels:
 
 networks:
-  raquel_net:
+  canop_net:
     driver: bridge

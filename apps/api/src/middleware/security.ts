@@ -34,7 +34,7 @@ export function applySecurityMiddleware(app: Express) {
           connectSrc: [
             "'self'",
             env.CORS_ORIGIN,
-            "wss://*.raquel.app",
+            "wss://*.canop.app",
             "https://api.anthropic.com",
             "https://checkout.razorpay.com",
             "https://api.razorpay.com",

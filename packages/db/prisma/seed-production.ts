@@ -19,15 +19,15 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("╔══════════════════════════════════════════╗");
-  console.log("║  Raquel — Production Seed                ║");
+  console.log("║  Canop — Production Seed                ║");
   console.log("╠══════════════════════════════════════════╣");
 
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@raquel.app";
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@canop.app";
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "ChangeThisPassword123!";
   const TENANT_NAME = process.env.TENANT_NAME || "My Institute";
   const TENANT_SLUG = (process.env.TENANT_SLUG || "my-institute").toLowerCase();
 
-  const PLATFORM_ADMIN_EMAIL = process.env.PLATFORM_ADMIN_EMAIL || "vansh@raquel.app";
+  const PLATFORM_ADMIN_EMAIL = process.env.PLATFORM_ADMIN_EMAIL || "vansh@canop.app";
   const PLATFORM_ADMIN_PASSWORD = process.env.PLATFORM_ADMIN_PASSWORD || "PlatformAdmin123!";
 
   console.log(`Tenant:         ${TENANT_NAME} (${TENANT_SLUG})`);
@@ -211,10 +211,10 @@ async function main() {
   console.log("╚══════════════════════════════════════════╝");
   console.log("");
   console.log("Production seed complete. Next steps:");
-  console.log(`  Tenant login:      https://${TENANT_SLUG}.raquel.app`);
+  console.log(`  Tenant login:      https://${TENANT_SLUG}.canop.app`);
   console.log(`    Email:    ${ADMIN_EMAIL}`);
   console.log(`    Password: ${ADMIN_PASSWORD}`);
-  console.log(`  Platform admin:    https://admin.raquel.app/platform-admin/login`);
+  console.log(`  Platform admin:    https://admin.canop.app/platform-admin/login`);
   console.log(`    Email:    ${PLATFORM_ADMIN_EMAIL}`);
   console.log(`    Password: ${PLATFORM_ADMIN_PASSWORD}`);
   console.log("");

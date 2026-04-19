@@ -26,7 +26,7 @@ export const Errors = {
     new AppError(
       404,
       "TENANT_NOT_FOUND",
-      `No institute found at '${slug}.raquel.app'`,
+      `No institute found at '${slug}.canop.app'`,
     ),
   tenantSuspended: () =>
     new AppError(403, "TENANT_SUSPENDED", "This institute has been suspended"),

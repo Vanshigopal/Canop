@@ -13,7 +13,7 @@ import {
   type ScheduleExam,
   UpdateExamSchema,
   type UpdateExam,
-} from "@raquel/types";
+} from "@canop/types";
 import { Router } from "express";
 
 export const examsRouter = Router();

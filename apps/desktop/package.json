@@ -1,8 +1,8 @@
 {
-  "name": "@raquel/desktop",
+  "name": "@canop/desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "Raquel — Electron desktop app for Windows / macOS / Linux",
+  "description": "Canop — Electron desktop app for Windows / macOS / Linux",
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "tsc && electron .",

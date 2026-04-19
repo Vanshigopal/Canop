@@ -66,7 +66,7 @@ export function DashboardPage() {
     <div>
       <PageHeader
         title="Platform Dashboard"
-        subtitle="Real-time snapshot of all institutes on Raquel."
+        subtitle="Real-time snapshot of all institutes on Canop."
       />
 
       {isLoading || !overview ? (
@@ -164,7 +164,7 @@ export function DashboardPage() {
                   <tr key={t.id} className="border-t border-slate-100">
                     <td className="py-2">
                       <div>{t.name}</div>
-                      <div className="text-xs text-slate-400">{t.slug}.raquel.app</div>
+                      <div className="text-xs text-slate-400">{t.slug}.canop.app</div>
                     </td>
                     <td className="py-2 text-slate-600">{t.plan}</td>
                     <td className="py-2 text-right">{formatInrCompact(t.monthlyPriceInr)}</td>

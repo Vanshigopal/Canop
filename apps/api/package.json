@@ -1,5 +1,5 @@
 {
-  "name": "@raquel/api",
+  "name": "@canop/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
     "@aws-sdk/client-s3": "^3.1032.0",
     "@aws-sdk/s3-request-presigner": "^3.1032.0",
     "@prisma/client": "^5.22.0",
-    "@raquel/db": "workspace:*",
-    "@raquel/types": "workspace:*",
+    "@canop/db": "workspace:*",
+    "@canop/types": "workspace:*",
     "@sentry/node": "^10.49.0",
     "axios": "^1.7.7",
     "bcryptjs": "^3.0.3",

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { ChildSummary } from "@/components/portal/portal-types";
 
-const STORAGE_KEY = "raquel:parent:selected-child";
+const STORAGE_KEY = "canop:parent:selected-child";
 
 export function useSelectedChild() {
   const [children, setChildren] = useState<ChildSummary[] | null>(null);

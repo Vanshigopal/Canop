@@ -116,7 +116,7 @@ export function useRazorpay() {
         key: order.key,
         amount: order.amountPaise,
         currency: order.currency,
-        name: args.tenantName ?? "Raquel",
+        name: args.tenantName ?? "Canop",
         description: `Fee payment — ${args.name}`,
         order_id: order.orderId,
         prefill: {

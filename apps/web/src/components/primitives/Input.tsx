@@ -1,4 +1,4 @@
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 import { type InputHTMLAttributes, type ReactNode, forwardRef } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {

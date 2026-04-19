@@ -84,7 +84,7 @@ export const usePlatformAuth = create<PlatformAuthState>()(
       },
     }),
     {
-      name: "raquel-platform-token",
+      name: "canop-platform-token",
       partialize: (s) => ({ token: s.token, admin: s.admin, isAuthenticated: s.isAuthenticated }),
     },
   ),

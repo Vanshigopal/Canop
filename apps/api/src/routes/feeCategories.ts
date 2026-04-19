@@ -3,7 +3,7 @@ import { Errors } from "@/lib/errors";
 import { created, noContent, ok } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
-import { CreateFeeCategorySchema, UpdateFeeCategorySchema } from "@raquel/types";
+import { CreateFeeCategorySchema, UpdateFeeCategorySchema } from "@canop/types";
 import { Router } from "express";
 
 export const feeCategoriesRouter = Router();

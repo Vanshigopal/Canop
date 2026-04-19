@@ -87,7 +87,7 @@ export function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <TopAppBar title="Raquel" />
+      <TopAppBar title="Canop" />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}

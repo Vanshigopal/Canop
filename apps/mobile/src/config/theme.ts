@@ -1,4 +1,4 @@
-// Material Design 3 token system for the Raquel mobile app.
+// Material Design 3 token system for the Canop mobile app.
 // Colors mirror the web brand palette (indigo / coral / peach) so that
 // users moving between desktop and mobile see one cohesive identity.
 

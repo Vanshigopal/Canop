@@ -83,7 +83,7 @@ export const SAMPLE_CONTEXT: Record<TemplateVariableKey, string> = {
   date: "17 Apr 2026",
   time: "10:30 AM",
   day: "Thursday",
-  invite_link: "https://demo.raquel.app/enroll/DEMO2026",
+  invite_link: "https://demo.canop.app/enroll/DEMO2026",
 };
 
 /**

@@ -1,4 +1,4 @@
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from "react";
 
 type Variant = "primary" | "secondary" | "ghost";

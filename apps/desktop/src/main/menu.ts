@@ -7,7 +7,7 @@ export function setupMenu(win: BrowserWindow): void {
     ...(isMac
       ? ([
           {
-            label: 'Raquel',
+            label: 'Canop',
             submenu: [
               { role: 'about' },
               { type: 'separator' },
@@ -78,11 +78,11 @@ export function setupMenu(win: BrowserWindow): void {
       submenu: [
         {
           label: 'Documentation',
-          click: () => shell.openExternal('https://raquel.app/docs'),
+          click: () => shell.openExternal('https://canop.app/docs'),
         },
         {
           label: 'Report an issue',
-          click: () => shell.openExternal('https://raquel.app/support'),
+          click: () => shell.openExternal('https://canop.app/support'),
         },
       ],
     },

@@ -1,15 +1,15 @@
 import axios, { type AxiosInstance } from "axios";
 
-export interface RaquelClientOptions {
+export interface CanopClientOptions {
   baseUrl: string;
   getAccessToken?: () => string | null;
   onUnauthorized?: () => void;
 }
 
-export class RaquelClient {
+export class CanopClient {
   private axios: AxiosInstance;
 
-  constructor(private opts: RaquelClientOptions) {
+  constructor(private opts: CanopClientOptions) {
     this.axios = axios.create({
       baseURL: this.opts.baseUrl,
       timeout: 15000,

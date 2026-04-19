@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     ml_service_api_key: str = "dev-internal-key"
 
     database_url: str = (
-        "postgresql://raquel:raquel_dev_password@localhost:5432/raquel_dev"
+        "postgresql://canop:canop_dev_password@localhost:5432/canop_dev"
     )
 
     models_dir: str = "app/models/trained"

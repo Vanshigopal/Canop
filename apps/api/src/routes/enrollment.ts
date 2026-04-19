@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { EnrollmentFormSchema } from "@raquel/types";
+import { EnrollmentFormSchema } from "@canop/types";
 import { prisma, withTenantTransaction } from "@/config/db";
 import { emitToTenant } from "@/config/socket";
 import { Errors } from "@/lib/errors";

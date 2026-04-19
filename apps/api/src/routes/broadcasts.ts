@@ -7,8 +7,8 @@ import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
 import { sendEmail, sendSMS, sendWhatsApp } from "@/services/gupshup.adapter";
 import { Prisma } from "@prisma/client";
-import type { AudienceFilter, AudienceType, NotificationChannel } from "@raquel/types";
-import { CreateBroadcastSchema } from "@raquel/types";
+import type { AudienceFilter, AudienceType, NotificationChannel } from "@canop/types";
+import { CreateBroadcastSchema } from "@canop/types";
 import { Router } from "express";
 
 export const broadcastsRouter = Router();
@@ -50,7 +50,7 @@ broadcastsRouter.post(
   validate(CreateBroadcastSchema),
   async (req, res) => {
     const tenantId = req.user!.tenantId;
-    const body = req.body as import("@raquel/types").CreateBroadcast;
+    const body = req.body as import("@canop/types").CreateBroadcast;
 
     if (req.user!.role === "TEACHER") {
       const perms = await prisma.permission.findFirst({

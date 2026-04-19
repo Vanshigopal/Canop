@@ -91,7 +91,7 @@ export function AttendanceScanPage() {
           {state.kind === "needs-auth" && (
             <NeedsAuthState
               onLogin={() => {
-                sessionStorage.setItem("raquel:returnTo", window.location.pathname);
+                sessionStorage.setItem("canop:returnTo", window.location.pathname);
                 navigate("/login");
               }}
             />

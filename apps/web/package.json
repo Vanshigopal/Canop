@@ -1,5 +1,5 @@
 {
-  "name": "@raquel/web",
+  "name": "@canop/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
-    "@raquel/sdk": "workspace:*",
-    "@raquel/types": "workspace:*",
-    "@raquel/ui": "workspace:*",
+    "@canop/sdk": "workspace:*",
+    "@canop/types": "workspace:*",
+    "@canop/ui": "workspace:*",
     "@sentry/react": "^10.49.0",
     "@tanstack/react-query": "^5.62.0",
     "axios": "^1.7.7",

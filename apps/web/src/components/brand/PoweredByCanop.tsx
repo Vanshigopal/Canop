@@ -1,13 +1,13 @@
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 
 interface Props {
   className?: string;
 }
 
-export function PoweredByRaquel({ className }: Props) {
+export function PoweredByCanop({ className }: Props) {
   return (
     <div className={cn("font-mono text-[10px] uppercase tracking-wider text-text-dim", className)}>
-      Powered by Raquel · v0.1
+      Powered by Canop · v0.1
     </div>
   );
 }

@@ -18,8 +18,8 @@ RUN pnpm install --frozen-lockfile --prod=false --ignore-scripts
 COPY packages/ packages/
 COPY apps/api/ apps/api/
 
-RUN pnpm --filter @raquel/db db:generate
-RUN pnpm --filter @raquel/api build
+RUN pnpm --filter @canop/db db:generate
+RUN pnpm --filter @canop/api build
 
 # ───── Stage 2: Production ─────
 FROM node:20-alpine AS production
@@ -29,8 +29,8 @@ RUN apk add --no-cache openssl libc6-compat wget dumb-init
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Create non-root user
-RUN addgroup -g 1001 -S raquel && \
-    adduser -S raquel -u 1001 -G raquel
+RUN addgroup -g 1001 -S canop && \
+    adduser -S canop -u 1001 -G canop
 
 COPY --from=builder /app/pnpm-workspace.yaml /app/pnpm-lock.yaml /app/package.json ./
 COPY --from=builder /app/packages/db/package.json packages/db/
@@ -46,9 +46,9 @@ COPY --from=builder /app/node_modules/.prisma node_modules/.prisma/
 COPY --from=builder /app/node_modules/@prisma node_modules/@prisma/
 
 # Own the app files
-RUN chown -R raquel:raquel /app
+RUN chown -R canop:canop /app
 
-USER raquel
+USER canop
 
 ENV NODE_ENV=production
 ENV PORT=3001

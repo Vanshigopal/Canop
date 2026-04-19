@@ -40,8 +40,8 @@ export function createPrismaClient() {
   });
 }
 
-export type RaquelDB = ReturnType<typeof createPrismaClient>;
-export type TenantDB = ReturnType<RaquelDB["withTenant"]>;
+export type CanopDB = ReturnType<typeof createPrismaClient>;
+export type TenantDB = ReturnType<CanopDB["withTenant"]>;
 
 /**
  * Alternative: simpler approach using $transaction directly in route handlers.

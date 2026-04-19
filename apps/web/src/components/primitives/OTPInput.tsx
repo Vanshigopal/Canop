@@ -1,4 +1,4 @@
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 import { type ClipboardEvent, type KeyboardEvent, useRef } from "react";
 
 interface OTPInputProps {

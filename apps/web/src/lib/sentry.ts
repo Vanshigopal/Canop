@@ -13,7 +13,7 @@ export function initSentry() {
   Sentry.init({
     dsn,
     environment: import.meta.env.MODE,
-    release: `raquel-web@${import.meta.env.VITE_APP_VERSION || "0.1.0"}`,
+    release: `canop-web@${import.meta.env.VITE_APP_VERSION || "0.1.0"}`,
     tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: import.meta.env.PROD ? 0.5 : 0,

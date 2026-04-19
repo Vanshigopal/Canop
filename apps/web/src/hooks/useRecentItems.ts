@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_PREFIX = "raquel:recent:";
+const STORAGE_PREFIX = "canop:recent:";
 const MAX_ITEMS = 20;
 
 interface RecentItem {

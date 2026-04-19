@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CreateClassSchema, UpdateClassSchema } from "@raquel/types";
+import { CreateClassSchema, UpdateClassSchema } from "@canop/types";
 import { prisma, withTenantTransaction } from "@/config/db";
 import { emitToTenant } from "@/config/socket";
 import { Errors } from "@/lib/errors";

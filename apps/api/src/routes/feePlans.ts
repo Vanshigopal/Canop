@@ -6,7 +6,7 @@ import { created, noContent, ok } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
 import type { Prisma } from "@prisma/client";
-import { AssignFeePlanSchema, CreateFeePlanSchema, UpdateFeePlanSchema } from "@raquel/types";
+import { AssignFeePlanSchema, CreateFeePlanSchema, UpdateFeePlanSchema } from "@canop/types";
 import { Router } from "express";
 
 export const feePlansRouter = Router();
@@ -34,7 +34,7 @@ feePlansRouter.get("/", async (req, res) => {
 
 feePlansRouter.post("/", requireRole("ADMIN"), validate(CreateFeePlanSchema), async (req, res) => {
   const tenantId = req.user!.tenantId;
-  const body = req.body as import("@raquel/types").CreateFeePlan;
+  const body = req.body as import("@canop/types").CreateFeePlan;
 
   const itemsSum = body.items.reduce((acc, it) => acc + it.amount, 0);
   if (Math.abs(itemsSum - body.totalAmount) > 0.01) {
@@ -142,7 +142,7 @@ feePlansRouter.post(
   async (req, res) => {
     const tenantId = req.user!.tenantId;
     const id = req.params.id as string;
-    const body = req.body as import("@raquel/types").AssignFeePlan;
+    const body = req.body as import("@canop/types").AssignFeePlan;
 
     const plan = await prisma.feePlan.findFirst({
       where: { id, tenantId, deletedAt: null },

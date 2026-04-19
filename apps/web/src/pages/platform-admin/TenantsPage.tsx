@@ -68,7 +68,7 @@ export function TenantsPage() {
     <div>
       <PageHeader
         title="Tenants"
-        subtitle="All institutes on Raquel."
+        subtitle="All institutes on Canop."
         actions={
           <button
             type="button"
@@ -156,7 +156,7 @@ export function TenantsPage() {
                       {t.name}
                     </Link>
                     <div className="text-xs text-slate-400">
-                      {t.slug}.raquel.app
+                      {t.slug}.canop.app
                     </div>
                   </td>
                   <td className="px-4 py-3">

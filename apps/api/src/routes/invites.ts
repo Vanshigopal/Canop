@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { Router } from "express";
-import { InviteCreateSchema } from "@raquel/types";
+import { InviteCreateSchema } from "@canop/types";
 import { prisma, withTenantTransaction } from "@/config/db";
 import { Errors } from "@/lib/errors";
 import { ok, created } from "@/lib/response";

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ══════════════════════════════════════════════════════════
-#  Raquel — Production Database Migration
+#  Canop — Production Database Migration
 #  Runs pg_dump backup then prisma migrate deploy.
 #  Usage: DATABASE_URL=... ./scripts/migrate-production.sh
 # ══════════════════════════════════════════════════════════
@@ -12,7 +12,7 @@ if [ -z "${DATABASE_URL:-}" ]; then
 fi
 
 echo "╔══════════════════════════════════════════╗"
-echo "║  Raquel — Production Database Migration  ║"
+echo "║  Canop — Production Database Migration  ║"
 echo "╠══════════════════════════════════════════╣"
 
 # Mask the password in output

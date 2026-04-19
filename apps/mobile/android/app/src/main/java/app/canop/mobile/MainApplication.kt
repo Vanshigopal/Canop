@@ -1,4 +1,4 @@
-package app.raquel.mobile
+package app.canop.mobile
 
 import android.app.Application
 import com.facebook.react.PackageList

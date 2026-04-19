@@ -5,7 +5,7 @@ import { ok } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
 import type { Prisma } from "@prisma/client";
-import { ApplyDiscountSchema, WaiveFeeSchema } from "@raquel/types";
+import { ApplyDiscountSchema, WaiveFeeSchema } from "@canop/types";
 import { Router } from "express";
 
 export const studentFeesRouter = Router();
@@ -88,7 +88,7 @@ studentFeesRouter.patch(
   async (req, res) => {
     const tenantId = req.user!.tenantId;
     const id = req.params.id as string;
-    const body = req.body as import("@raquel/types").ApplyDiscount;
+    const body = req.body as import("@canop/types").ApplyDiscount;
 
     const fee = await prisma.studentFee.findFirst({
       where: { id, tenantId },

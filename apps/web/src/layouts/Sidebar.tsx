@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { useAuthStore } from "@/stores/auth";
 import { useSidebarStore } from "@/stores/sidebar";
@@ -78,7 +78,7 @@ export function Sidebar({ className, forceExpanded }: SidebarProps) {
                 fontSize: 24,
               }}
             >
-              Raquel
+              Canop
             </span>
           )}
         </div>

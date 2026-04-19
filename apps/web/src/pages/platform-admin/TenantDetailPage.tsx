@@ -49,7 +49,7 @@ export function TenantDetailPage() {
 
       <PageHeader
         title={tenant.name}
-        subtitle={`${tenant.slug}.raquel.app`}
+        subtitle={`${tenant.slug}.canop.app`}
         actions={
           <div className="flex items-center gap-2">
             <Badge tone={STATUS_TONES[tenant.status] ?? "slate"}>

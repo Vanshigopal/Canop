@@ -6,7 +6,7 @@ export function getTenantSlug(): string | null {
   const host = window.location.hostname;
   const parts = host.split(".");
   // demo.lvh.me -> "demo"
-  // demo.raquel.app -> "demo"
+  // demo.canop.app -> "demo"
   // localhost -> null
   if (parts.length >= 2) {
     const slug = parts[0];

@@ -1,5 +1,5 @@
 import { BrandMark } from "@/components/brand/BrandMark";
-import { PoweredByRaquel } from "@/components/brand/PoweredByRaquel";
+import { PoweredByCanop } from "@/components/brand/PoweredByCanop";
 import { AuroraBackground } from "@/components/layout/AuroraBackground";
 import { Button } from "@/components/primitives";
 import s from "./signup.module.css";
@@ -34,7 +34,7 @@ export function SignupPage() {
           </Button>
         </div>
         <div className={s.footerWrap}>
-          <PoweredByRaquel />
+          <PoweredByCanop />
         </div>
       </main>
     </>

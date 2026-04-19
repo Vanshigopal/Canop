@@ -1,5 +1,5 @@
 {
-  "name": "@raquel/sdk",
+  "name": "@canop/sdk",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "clean": "rimraf node_modules .turbo"
   },
   "dependencies": {
-    "@raquel/types": "workspace:*",
+    "@canop/types": "workspace:*",
     "axios": "^1.7.7"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-# Raquel
+# Canop
 
 **The AI brain your institute runs on.**
 

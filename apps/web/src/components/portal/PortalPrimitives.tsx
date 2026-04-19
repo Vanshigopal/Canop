@@ -1,4 +1,4 @@
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 
 interface PortalCardProps extends HTMLAttributes<HTMLDivElement> {

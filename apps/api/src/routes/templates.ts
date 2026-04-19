@@ -9,7 +9,7 @@ import {
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
 import type { Prisma } from "@prisma/client";
-import { CreateTemplateSchema, UpdateTemplateSchema } from "@raquel/types";
+import { CreateTemplateSchema, UpdateTemplateSchema } from "@canop/types";
 import { Router } from "express";
 
 export const templatesRouter = Router();
@@ -35,7 +35,7 @@ templatesRouter.get("/", async (req, res) => {
 
 templatesRouter.post("/", validate(CreateTemplateSchema), async (req, res) => {
   const tenantId = req.user!.tenantId;
-  const body = req.body as import("@raquel/types").CreateTemplate;
+  const body = req.body as import("@canop/types").CreateTemplate;
   const row = await withTenantTransaction(prisma, tenantId, (tx) =>
     tx.notificationTemplate.create({
       data: {
@@ -66,7 +66,7 @@ templatesRouter.patch("/:id", validate(UpdateTemplateSchema), async (req, res) =
   const id = req.params.id as string;
   const existing = await prisma.notificationTemplate.findFirst({ where: { id, tenantId } });
   if (!existing) throw Errors.notFound("Template");
-  const body = req.body as import("@raquel/types").UpdateTemplate;
+  const body = req.body as import("@canop/types").UpdateTemplate;
   const data: Prisma.NotificationTemplateUpdateInput = {};
   if (body.name !== undefined) data.name = body.name;
   if (body.subject !== undefined) data.subject = body.subject;

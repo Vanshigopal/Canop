@@ -38,7 +38,7 @@ export function requireFeature(feature: FeatureKey) {
           ok: false,
           error: {
             code: "FEATURE_DISABLED",
-            message: `The ${feature} feature is not enabled on your current plan. Contact Raquel to upgrade.`,
+            message: `The ${feature} feature is not enabled on your current plan. Contact Canop to upgrade.`,
           },
         });
       }

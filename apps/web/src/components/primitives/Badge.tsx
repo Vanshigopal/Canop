@@ -1,4 +1,4 @@
-import { cn } from "@raquel/ui";
+import { cn } from "@canop/ui";
 import type { HTMLAttributes } from "react";
 
 type Tone = "neutral" | "success" | "warning" | "danger" | "info" | "accent";

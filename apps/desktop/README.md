@@ -1,6 +1,6 @@
-# Raquel Desktop
+# Canop Desktop
 
-Electron wrapper for the Raquel web app. Targets Windows, macOS, and
+Electron wrapper for the Canop web app. Targets Windows, macOS, and
 Linux from the same codebase. The renderer is the production build of
 `apps/web` — no fork, no separate UI.
 
@@ -20,7 +20,7 @@ The shell adds:
 - **Node.js** 20+
 - **pnpm** 9+
 - The web app must be built when packaging a release
-  (`pnpm --filter @raquel/web build`).
+  (`pnpm --filter @canop/web build`).
 
 ---
 
@@ -28,7 +28,7 @@ The shell adds:
 
 ```bash
 # In one terminal — start the web dev server (Vite)
-pnpm --filter @raquel/web dev
+pnpm --filter @canop/web dev
 # Vite serves on http://localhost:5173
 
 # In another terminal — compile + launch Electron
@@ -43,7 +43,7 @@ works inside the Electron window.
 
 ```bash
 # 1. Build the web app
-pnpm --filter @raquel/web build
+pnpm --filter @canop/web build
 # Output: apps/web/dist/
 
 # 2. Build the desktop installers
@@ -59,16 +59,16 @@ Output lands in `apps/desktop/release/`:
 
 | Platform | Artifact                              |
 |----------|---------------------------------------|
-| Windows  | `Raquel Setup <ver>.exe` (NSIS)       |
-| macOS    | `Raquel-<ver>.dmg`                    |
-| Linux    | `Raquel-<ver>.AppImage`, `*.deb`      |
+| Windows  | `Canop Setup <ver>.exe` (NSIS)       |
+| macOS    | `Canop-<ver>.dmg`                    |
+| Linux    | `Canop-<ver>.AppImage`, `*.deb`      |
 
 The NSIS installer creates desktop and Start Menu shortcuts and lets
 the user pick an install directory.
 
 ## Auto-update
 
-The app checks `https://updates.raquel.app` every 4 hours via
+The app checks `https://updates.canop.app` every 4 hours via
 `electron-updater`. To switch to your own update server, edit the
 `publish.url` field in `electron-builder.json`. The standard
 electron-updater layout works — see

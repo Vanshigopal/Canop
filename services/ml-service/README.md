@@ -1,4 +1,4 @@
-# Raquel ML Service
+# Canop ML Service
 
 Internal Python microservice for OMR scanning, dropout risk prediction, and
 performance prediction. Runs as a Docker container on port 8000.

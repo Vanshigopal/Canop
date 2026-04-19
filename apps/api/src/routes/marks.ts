@@ -20,7 +20,7 @@ import {
   type BulkEnterMarks,
   EnterMarksSchema,
   type EnterMarks,
-} from "@raquel/types";
+} from "@canop/types";
 import { Router } from "express";
 
 export const marksRouter = Router({ mergeParams: true });

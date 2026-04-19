@@ -21,10 +21,10 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "app.raquel.mobile"
+    namespace "app.canop.mobile"
 
     defaultConfig {
-        applicationId "app.raquel.mobile"
+        applicationId "app.canop.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

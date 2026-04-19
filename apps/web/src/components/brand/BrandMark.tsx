@@ -19,7 +19,7 @@ export function BrandMark({ size = 48 }: BrandMarkProps) {
         letterSpacing: "-0.02em",
       }}
     >
-      R
+      C
     </div>
   );
 }

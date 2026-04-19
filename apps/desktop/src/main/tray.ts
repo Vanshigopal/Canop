@@ -8,11 +8,11 @@ export function setupTray(mainWindow: BrowserWindow): void {
   const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
 
   tray = new Tray(icon);
-  tray.setToolTip('Raquel');
+  tray.setToolTip('Canop');
 
   const menu = Menu.buildFromTemplate([
     {
-      label: 'Open Raquel',
+      label: 'Open Canop',
       click: () => {
         mainWindow.show();
         mainWindow.focus();

@@ -8,8 +8,8 @@ const DEV_ALLOWED_PATTERNS = [
 ];
 
 const PROD_ALLOWED_PATTERNS: RegExp[] = [
-  /^https:\/\/raquel\.app$/,
-  /^https:\/\/[a-z0-9-]+\.raquel\.app$/,
+  /^https:\/\/canop\.app$/,
+  /^https:\/\/[a-z0-9-]+\.canop\.app$/,
 ];
 
 function isAllowed(origin: string): boolean {

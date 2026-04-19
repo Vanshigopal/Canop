@@ -1,12 +1,12 @@
-# Raquel — Production Deployment Checklist
+# Canop — Production Deployment Checklist
 
-This guide walks through a full production deployment of Raquel on Railway
+This guide walks through a full production deployment of Canop on Railway
 (or any Docker host). Follow each section top-to-bottom.
 
 ## 1. Prerequisites
 
 ### External accounts
-- [ ] Domain registered: `raquel.app`
+- [ ] Domain registered: `canop.app`
 - [ ] Cloudflare account (for wildcard DNS + SSL)
 - [ ] Railway account (or equivalent Docker host)
 - [ ] Razorpay merchant account (KYC complete, live keys)
@@ -37,7 +37,7 @@ openssl rand -base64 32
 
 ## 2. Railway setup
 
-1. Create new Railway project: `raquel-production`.
+1. Create new Railway project: `canop-production`.
 2. Add **PostgreSQL** plugin → copy `DATABASE_URL` to env vars.
 3. Add **Redis** plugin → copy `REDIS_URL` to env vars.
 4. Create three services in the same project:
@@ -59,9 +59,9 @@ ADMIN_EMAIL="owner@institute.com" \
 ADMIN_PASSWORD="FirstLoginPassword123!" \
 TENANT_NAME="ABC Coaching" \
 TENANT_SLUG="abc-coaching" \
-PLATFORM_ADMIN_EMAIL="vansh@raquel.app" \
+PLATFORM_ADMIN_EMAIL="vansh@canop.app" \
 PLATFORM_ADMIN_PASSWORD="YourStrongPassword123!" \
-pnpm --filter @raquel/db tsx prisma/seed-production.ts
+pnpm --filter @canop/db tsx prisma/seed-production.ts
 ```
 
 ## 4. ML service bootstrap
@@ -69,10 +69,10 @@ pnpm --filter @raquel/db tsx prisma/seed-production.ts
 Models train from whatever historical data the first tenant has.
 
 ```bash
-curl -X POST https://ml.raquel.app/training/dropout/bootstrap \
+curl -X POST https://ml.canop.app/training/dropout/bootstrap \
   -H "x-api-key: $ML_SERVICE_API_KEY"
 
-curl -X POST https://ml.raquel.app/training/performance/bootstrap \
+curl -X POST https://ml.canop.app/training/performance/bootstrap \
   -H "x-api-key: $ML_SERVICE_API_KEY"
 ```
 
@@ -80,11 +80,11 @@ curl -X POST https://ml.raquel.app/training/performance/bootstrap \
 
 | Type  | Name             | Content                  | Proxy |
 |-------|------------------|--------------------------|-------|
-| A     | raquel.app       | Railway IP               | Yes   |
-| CNAME | *.raquel.app     | raquel.app               | Yes   |
-| CNAME | api.raquel.app   | Railway API target       | Yes   |
-| CNAME | ml.raquel.app    | Railway ML target        | Yes   |
-| CNAME | admin.raquel.app | raquel.app (same as web) | Yes   |
+| A     | canop.app       | Railway IP               | Yes   |
+| CNAME | *.canop.app     | canop.app               | Yes   |
+| CNAME | api.canop.app   | Railway API target       | Yes   |
+| CNAME | ml.canop.app    | Railway ML target        | Yes   |
+| CNAME | admin.canop.app | canop.app (same as web) | Yes   |
 
 SSL is handled automatically by Railway (Let's Encrypt) and Cloudflare.
 Set Cloudflare SSL mode to **Full (strict)**.
@@ -93,26 +93,26 @@ Set Cloudflare SSL mode to **Full (strict)**.
 
 ```bash
 # Liveness
-curl https://api.raquel.app/healthz
+curl https://api.canop.app/healthz
 
 # Deep health
-curl https://api.raquel.app/health
+curl https://api.canop.app/health
 
 # Tenant login (after seed)
-curl -X POST https://api.raquel.app/api/v1/auth/login \
+curl -X POST https://api.canop.app/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -H "X-Tenant-Slug: abc-coaching" \
   -d '{"email":"owner@institute.com","password":"FirstLoginPassword123!"}'
 
 # Platform admin login
-curl -X POST https://api.raquel.app/api/v1/platform/auth/login \
+curl -X POST https://api.canop.app/api/v1/platform/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"vansh@raquel.app","password":"YourStrongPassword123!"}'
+  -d '{"email":"vansh@canop.app","password":"YourStrongPassword123!"}'
 ```
 
 ## 7. First-login workflow
 
-1. Browse to `https://abc-coaching.raquel.app`
+1. Browse to `https://abc-coaching.canop.app`
 2. Log in with seed credentials
 3. **Immediately change the admin password**
 4. Settings → add classes and subjects
@@ -121,9 +121,9 @@ curl -X POST https://api.raquel.app/api/v1/platform/auth/login \
 
 ## 8. Platform admin access
 
-1. Browse to `https://admin.raquel.app/platform-admin/login`
-   (or `https://raquel.app/platform-admin/login`)
-2. Log in as `vansh@raquel.app`
+1. Browse to `https://admin.canop.app/platform-admin/login`
+   (or `https://canop.app/platform-admin/login`)
+2. Log in as `vansh@canop.app`
 3. Create additional tenants, manage subscriptions, view platform analytics.
 
 ## 9. Monitoring
@@ -151,7 +151,7 @@ gunzip -c backup_YYYYMMDD_HHMMSS.sql.gz | psql "$DATABASE_URL"
 
 - [ ] All secrets are in Railway env vars, NOT in git
 - [ ] `.env.production` is gitignored
-- [ ] CORS restricted to `*.raquel.app`
+- [ ] CORS restricted to `*.canop.app`
 - [ ] Helmet + CSP active
 - [ ] Rate limits active (check `X-RateLimit-*` headers)
 - [ ] HTTPS enforced (Cloudflare HSTS)

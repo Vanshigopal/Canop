@@ -24,13 +24,13 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
 ENV VITE_APP_VERSION=${VITE_APP_VERSION}
 
-RUN pnpm --filter @raquel/web build
+RUN pnpm --filter @canop/web build
 
 # ───── Stage 2: Nginx ─────
 FROM nginx:1.27-alpine AS production
 
-RUN addgroup -g 1001 -S raquel && \
-    adduser -S raquel -u 1001 -G raquel
+RUN addgroup -g 1001 -S canop && \
+    adduser -S canop -u 1001 -G canop
 
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf

@@ -1,12 +1,12 @@
 {
-  "name": "raquel",
+  "name": "canop",
   "version": "0.1.0",
   "private": true,
-  "description": "Raquel — AI-powered institutional ERP platform (monorepo root)",
+  "description": "Canop — AI-powered institutional ERP platform (monorepo root)",
   "scripts": {
     "dev": "turbo dev",
-    "dev:web": "turbo dev --filter=@raquel/web",
-    "dev:api": "turbo dev --filter=@raquel/api",
+    "dev:web": "turbo dev --filter=@canop/web",
+    "dev:api": "turbo dev --filter=@canop/api",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "lint": "biome check .",
@@ -15,11 +15,11 @@
     "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker/docker-compose.yml down",
     "db:reset": "docker compose -f infra/docker/docker-compose.yml down -v && pnpm db:up",
-    "db:generate": "pnpm --filter @raquel/db db:generate",
-    "db:migrate": "pnpm --filter @raquel/db db:migrate",
-    "db:seed": "pnpm --filter @raquel/db db:seed",
-    "db:studio": "pnpm --filter @raquel/db db:studio",
-    "db:push": "pnpm --filter @raquel/db db:push"
+    "db:generate": "pnpm --filter @canop/db db:generate",
+    "db:migrate": "pnpm --filter @canop/db db:migrate",
+    "db:seed": "pnpm --filter @canop/db db:seed",
+    "db:studio": "pnpm --filter @canop/db db:studio",
+    "db:push": "pnpm --filter @canop/db db:push"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
