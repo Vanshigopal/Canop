@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/config/db";
 import { redis } from "@/config/redis";
 import { Errors } from "@/lib/errors";
+import { STRONG_PASSWORD } from "@/lib/password-policy";
 import { logPlatformAction } from "@/lib/platform-audit";
 import { created, ok, paginated } from "@/lib/response";
 import {
@@ -106,7 +107,7 @@ platformSystemRouter.get("/admins", async (_req, res) => {
 const CreateAdminSchema = z.object({
   name: z.string().min(2).max(200),
   email: z.string().email(),
-  password: z.string().min(10).max(128),
+  password: STRONG_PASSWORD,
   role: z.enum(["SUPER_ADMIN", "PLATFORM_SUPPORT", "PLATFORM_BILLING"]),
 });
 platformSystemRouter.post(

@@ -8,7 +8,7 @@
     },
     "skipLibCheck": true,
     "jsx": "react-native",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true

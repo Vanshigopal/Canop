@@ -1,7 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import QRCodeScanner from 'react-native-qrcode-scanner';
-import type { Event as QrEvent } from 'react-native-qrcode-scanner';
+
+interface QrEvent {
+  data: string;
+  rawData?: string;
+  type?: string;
+}
 import { Teacher } from '@/api/endpoints';
 import { MD3 } from '@/config/theme';
 

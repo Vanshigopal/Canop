@@ -9,6 +9,7 @@ import { trackRecentItem } from "@/lib/search/recency";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { assertUnderLimit } from "@/middleware/feature-gate";
 import { validate } from "@/middleware/validate";
+import { SAFE_USER_SELECT } from "@/lib/user-sanitize";
 import { notifySafe } from "@/services/notification.service";
 
 export const teachersRouter = Router();
@@ -18,7 +19,8 @@ teachersRouter.use(authenticate, requireRole("ADMIN"));
 teachersRouter.get("/", async (req, res) => {
   const teachers = await prisma.user.findMany({
     where: { tenantId: req.user!.tenantId, role: "TEACHER", deletedAt: null },
-    include: {
+    select: {
+      ...SAFE_USER_SELECT,
       permissions: true,
       teacherSubjects: { include: { subject: { select: { id: true, name: true, code: true } } } },
     },
@@ -58,7 +60,8 @@ teachersRouter.post("/", validate(CreateTeacherSchema), async (req, res) => {
     }
     return tx.user.findUnique({
       where: { id: user.id },
-      include: {
+      select: {
+        ...SAFE_USER_SELECT,
         permissions: true,
         teacherSubjects: { include: { subject: { select: { id: true, name: true, code: true } } } },
       },
@@ -91,7 +94,8 @@ teachersRouter.get("/:id", async (req, res) => {
   const id = req.params.id as string;
   const teacher = await prisma.user.findFirst({
     where: { id, tenantId: req.user!.tenantId, role: "TEACHER", deletedAt: null },
-    include: {
+    select: {
+      ...SAFE_USER_SELECT,
       permissions: true,
       teacherSubjects: { include: { subject: { select: { id: true, name: true, code: true } } } },
     },
@@ -132,7 +136,8 @@ teachersRouter.patch("/:id", validate(UpdateTeacherSchema), async (req, res) => 
     }
     return tx.user.findUnique({
       where: { id: teacher.id },
-      include: {
+      select: {
+        ...SAFE_USER_SELECT,
         permissions: true,
         teacherSubjects: { include: { subject: { select: { id: true, name: true, code: true } } } },
       },

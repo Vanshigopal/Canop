@@ -45,7 +45,7 @@ export function VideosScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('VideoPlayer' as never, { videoId: item.id })}
+              onPress={() => (navigation.navigate as any)('VideoPlayer', { videoId: item.id })}
             >
               <Card style={styles.card}>
                 <View style={styles.thumb}>

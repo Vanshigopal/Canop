@@ -12,7 +12,18 @@ import { setupTray } from './tray';
 import { setupAutoUpdater } from './updater';
 import { showNativeNotification } from './notifications';
 
-const store = new Store();
+type WindowBounds = { width: number; height: number; x?: number; y?: number };
+type StoreSchema = { windowBounds: WindowBounds };
+
+const store = new Store<StoreSchema>({
+  defaults: {
+    windowBounds: { width: 1280, height: 800 },
+  },
+}) as Store<StoreSchema> & {
+  get<K extends keyof StoreSchema>(key: K, defaultValue?: StoreSchema[K]): StoreSchema[K];
+  set<K extends keyof StoreSchema>(key: K, value: StoreSchema[K]): void;
+};
+
 const isDev = !app.isPackaged;
 
 // Single-instance lock — bringing focus to the existing window when

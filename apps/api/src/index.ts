@@ -15,6 +15,7 @@ import { applyRateLimiting } from "@/middleware/rate-limit";
 import { requestLoggerMiddleware } from "@/middleware/request-logger";
 import { applySecurityMiddleware } from "@/middleware/security";
 import { tenantMiddleware } from "@/middleware/tenant";
+import { registerUUIDParamValidators } from "@/middleware/validate-uuid";
 import { attendanceRouter } from "@/routes/attendance";
 import { authRouter } from "@/routes/auth";
 import { batchesRouter } from "@/routes/batches";
@@ -117,6 +118,9 @@ app.use("/api/v1/webhooks", webhooksRouter);
 if (!isStorageR2() || env.NODE_ENV === "development") {
   app.use("/api/v1/static", staticRouter);
 }
+
+// Register param-level UUID validators (applies to any route with :id, :studentId, etc.)
+registerUUIDParamValidators(app);
 
 // From here on, everything is tenant-scoped
 app.use("/api/v1", tenantMiddleware);

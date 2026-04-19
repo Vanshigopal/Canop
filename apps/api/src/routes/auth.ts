@@ -7,6 +7,7 @@ import { env } from "@/config/env";
 import { Errors } from "@/lib/errors";
 import { signAccessToken, signResetToken, verifyResetToken } from "@/lib/jwt";
 import { deleteOTP, generateOTP, storeOTP, verifyOTP } from "@/lib/otp";
+import { STRONG_PASSWORD } from "@/lib/password-policy";
 import { ok } from "@/lib/response";
 import { authenticate } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
@@ -46,7 +47,7 @@ const ForgotPasswordSchema = z.object({
 
 const ResetPasswordSchema = z.object({
   token: z.string(),
-  password: z.string().min(8),
+  password: STRONG_PASSWORD,
 });
 
 // ── Helpers ──────────────────────────────────────────────

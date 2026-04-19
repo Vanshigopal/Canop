@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma, withTenantTransaction } from "@/config/db";
 import { Errors } from "@/lib/errors";
 import { logPlatformAction } from "@/lib/platform-audit";
+import { STRONG_PASSWORD } from "@/lib/password-policy";
 import { created, ok, paginated } from "@/lib/response";
 import {
   requirePlatformAuth,
@@ -222,7 +223,7 @@ const CreateTenantSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "Only lowercase letters, digits, hyphens"),
   ownerName: z.string().min(2).max(200),
   ownerEmail: z.string().email(),
-  ownerPassword: z.string().min(8).max(128),
+  ownerPassword: STRONG_PASSWORD,
   plan: z.enum(["FREE_TRIAL", "STARTER", "GROWTH", "PROFESSIONAL", "ENTERPRISE", "CUSTOM"]),
   trialDays: z.number().int().min(0).max(365).optional(),
 });
@@ -417,7 +418,7 @@ platformTenantsRouter.get("/:id/owners", async (req, res) => {
 const AddOwnerSchema = z.object({
   name: z.string().min(2).max(200),
   email: z.string().email(),
-  password: z.string().min(8).max(128),
+  password: STRONG_PASSWORD,
   phone: z.string().max(15).optional(),
 });
 platformTenantsRouter.post("/:id/owners", async (req, res) => {
