@@ -7,6 +7,7 @@ import { Errors } from "@/lib/errors";
 import { ok, created } from "@/lib/response";
 import { trackRecentItem } from "@/lib/search/recency";
 import { authenticate, requireRole } from "@/middleware/auth";
+import { assertUnderLimit } from "@/middleware/feature-gate";
 import { validate } from "@/middleware/validate";
 import { notifySafe } from "@/services/notification.service";
 
@@ -34,6 +35,11 @@ teachersRouter.post("/", validate(CreateTeacherSchema), async (req, res) => {
     where: { tenantId_email: { tenantId, email } },
   });
   if (existing) throw Errors.badRequest("A user with this email already exists");
+
+  const currentTeachers = await prisma.user.count({
+    where: { tenantId, role: "TEACHER", deletedAt: null },
+  });
+  await assertUnderLimit(tenantId, "maxTeachers", currentTeachers, "Teacher");
 
   const password = randomBytes(8).toString("base64url");
   const passwordHash = hashSync(password, 12);

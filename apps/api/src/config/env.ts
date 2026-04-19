@@ -27,6 +27,9 @@ const EnvSchema = z.object({
   BUNNY_STREAM_API_KEY: z.string().default(""),
   BUNNY_STREAM_LIBRARY_ID: z.string().default(""),
   BUNNY_STREAM_CDN_HOSTNAME: z.string().default(""),
+  SENTRY_DSN: z.string().default(""),
+  RESEND_API_KEY: z.string().default(""),
+  RESEND_FROM_EMAIL: z.string().default("noreply@raquel.app"),
 });
 
 export const env = EnvSchema.parse(process.env);

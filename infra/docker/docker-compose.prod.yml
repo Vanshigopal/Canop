@@ -1,0 +1,120 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-raquel}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      POSTGRES_DB: ${DB_NAME:-raquel_prod}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-raquel}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - raquel_net
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - raquel_net
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: "postgresql://${DB_USER:-raquel}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-raquel_prod}?schema=public&connection_limit=20"
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://*.raquel.app}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-900}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-604800}
+      OTP_TTL: ${OTP_TTL:-300}
+      ML_SERVICE_URL: http://ml-service:8000
+      ML_SERVICE_API_KEY: ${ML_SERVICE_API_KEY:?ML_SERVICE_API_KEY required}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+      GUPSHUP_API_KEY: ${GUPSHUP_API_KEY}
+      GUPSHUP_APP_NAME: ${GUPSHUP_APP_NAME}
+      GUPSHUP_SENDER_ID: ${GUPSHUP_SENDER_ID}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_ENCRYPTION_KEY: ${LLM_ENCRYPTION_KEY}
+      BUNNY_STREAM_API_KEY: ${BUNNY_STREAM_API_KEY}
+      BUNNY_STREAM_LIBRARY_ID: ${BUNNY_STREAM_LIBRARY_ID}
+      BUNNY_STREAM_CDN_HOSTNAME: ${BUNNY_STREAM_CDN_HOSTNAME}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-raquel-uploads}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@raquel.app}
+      SENTRY_DSN: ${SENTRY_DSN}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - raquel_net
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://api.raquel.app}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN}
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.1.0}
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - raquel_net
+
+  ml-service:
+    build:
+      context: ../../services/ml-service
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://${DB_USER:-raquel}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-raquel_prod}"
+      ML_SERVICE_API_KEY: ${ML_SERVICE_API_KEY}
+      ENVIRONMENT: production
+    volumes:
+      - mlmodels:/app/app/models/trained
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - raquel_net
+
+volumes:
+  pgdata:
+  redisdata:
+  mlmodels:
+
+networks:
+  raquel_net:
+    driver: bridge

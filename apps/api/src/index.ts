@@ -5,10 +5,15 @@ import express from "express";
 import { env } from "@/config/env";
 import { redis } from "@/config/redis";
 import { initializeSocket } from "@/config/socket";
+import { Sentry, initSentry } from "@/lib/sentry";
 import { sanitizeRequestMiddleware } from "@/lib/sanitize";
 import { corsMiddleware } from "@/middleware/cors";
-import { errorMiddleware } from "@/middleware/error";
+import { productionErrorHandler } from "@/middleware/error-handler";
+import { requireFeature } from "@/middleware/feature-gate";
 import { loggerMiddleware } from "@/middleware/logger";
+import { applyRateLimiting } from "@/middleware/rate-limit";
+import { requestLoggerMiddleware } from "@/middleware/request-logger";
+import { applySecurityMiddleware } from "@/middleware/security";
 import { tenantMiddleware } from "@/middleware/tenant";
 import { attendanceRouter } from "@/routes/attendance";
 import { authRouter } from "@/routes/auth";
@@ -41,6 +46,10 @@ import { omrRouter } from "@/routes/omr";
 import { parentFeesRouter } from "@/routes/parentFees";
 import { parentPortalRouter } from "@/routes/parent-portal";
 import { paymentsRouter } from "@/routes/payments";
+import { platformAnalyticsRouter } from "@/routes/platform-analytics";
+import { platformAuthRouter } from "@/routes/platform-auth";
+import { platformSystemRouter } from "@/routes/platform-system";
+import { platformTenantsRouter } from "@/routes/platform-tenants";
 import { retestsRouter } from "@/routes/retests";
 import { searchRouter } from "@/routes/search";
 import { statsRouter } from "@/routes/stats";
@@ -57,24 +66,59 @@ import { videosRouter } from "@/routes/videos";
 import { webhooksRouter } from "@/routes/webhooks";
 import { isStorageR2 } from "@/services/storage.service";
 
+// Sentry must init BEFORE the Express app
+initSentry();
+
 const app = express();
 
-app.use(loggerMiddleware);
+// Trust proxy headers (Railway / Nginx)
+app.set("trust proxy", 1);
+
+// Request ID + timing (early so everything is tagged)
+app.use(requestLoggerMiddleware);
+
+// Pino for dev; structured logs handled by requestLoggerMiddleware in prod
+if (env.NODE_ENV !== "production") {
+  app.use(loggerMiddleware);
+}
+
+// Security headers
+applySecurityMiddleware(app);
+
+// CORS
 app.use(corsMiddleware);
+
+// Compression
 app.use(compression());
-app.use(express.json({ limit: "1mb" }));
+
+// Body parsers with size limits
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+
+// Rate limiting (before tenant resolution)
+applyRateLimiting(app);
+
+// Health — public, before any tenant/auth middleware
+app.use(healthRouter);
+
+// Sanitization
 app.use(sanitizeRequestMiddleware);
 
-app.use("/health", healthRouter);
+// Platform admin routes — completely separate namespace, no tenant middleware
+app.use("/api/v1/platform/auth", platformAuthRouter);
+app.use("/api/v1/platform/tenants", platformTenantsRouter);
+app.use("/api/v1/platform/analytics", platformAnalyticsRouter);
+app.use("/api/v1/platform", platformSystemRouter);
 
 // Webhooks — external callers, no tenant resolution
 app.use("/api/v1/webhooks", webhooksRouter);
 
-// Static files — dev only or R2 fallback (no tenant middleware, signed URL handles access control)
+// Static files — dev only or R2 fallback
 if (!isStorageR2() || env.NODE_ENV === "development") {
   app.use("/api/v1/static", staticRouter);
 }
 
+// From here on, everything is tenant-scoped
 app.use("/api/v1", tenantMiddleware);
 
 app.use("/api/v1/tenant", tenantRouter);
@@ -109,18 +153,24 @@ app.use("/api/v1/student", studentPortalRouter);
 app.use("/api/v1/retests", retestsRouter);
 app.use("/api/v1/intelligence", intelligenceRouter);
 app.use("/api/v1/search", searchRouter);
-app.use("/api/v1/omr", omrRouter);
+app.use("/api/v1/omr", requireFeature("omr"), omrRouter);
 app.use("/api/v1/dropout", dropoutRouter);
-app.use("/api/v1/ai/config", llmConfigRouter);
-app.use("/api/v1/ai", llmTestRouter);
+app.use("/api/v1/ai/config", requireFeature("ai"), llmConfigRouter);
+app.use("/api/v1/ai", requireFeature("ai"), llmTestRouter);
 app.use("/api/v1/materials", materialsRouter);
-app.use("/api/v1/videos", videosRouter);
+app.use("/api/v1/videos", requireFeature("video"), videosRouter);
 app.use("/api/v1/assignments", assignmentsRouter);
-app.use("/api/v1/analytics", analyticsRouter);
+app.use("/api/v1/analytics", requireFeature("analytics"), analyticsRouter);
 app.use("/api/v1/dashboard", dashboardConfigRouter);
 app.use("/api/v1/exports", exportsRouter);
 
-app.use(errorMiddleware);
+// Sentry error-capture
+if (env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
+// Production error handler (last)
+app.use(productionErrorHandler);
 
 const httpServer = createServer(app);
 
@@ -128,10 +178,13 @@ async function start() {
   await redis.connect();
   initializeSocket(httpServer);
   httpServer.listen(env.PORT, () => {
-    console.log(`[raquel-api] listening on http://localhost:${env.PORT}`);
+    console.log(
+      `[raquel-api] listening on http://localhost:${env.PORT} (${env.NODE_ENV})`,
+    );
   });
 
   const shutdown = () => {
+    console.log("[raquel-api] shutting down...");
     redis.disconnect();
     httpServer.close(() => process.exit(0));
   };

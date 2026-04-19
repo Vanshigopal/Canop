@@ -1,0 +1,19 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "apps/api/Dockerfile"
+
+[deploy]
+healthcheckPath = "/healthz"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
+numReplicas = 1
+
+# To deploy multiple services (api, web, ml-service) on Railway, create separate
+# Railway services in the same project and point each to its respective Dockerfile:
+#
+#   api:        dockerfilePath = "apps/api/Dockerfile"       healthcheckPath = "/healthz"
+#   web:        dockerfilePath = "apps/web/Dockerfile"       healthcheckPath = "/"
+#   ml-service: dockerfilePath = "services/ml-service/Dockerfile"  healthcheckPath = "/health"
+#
+# Railway auto-injects DATABASE_URL + REDIS_URL from provisioned plugins.

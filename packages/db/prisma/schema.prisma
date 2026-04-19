@@ -268,6 +268,8 @@ model Tenant {
   assignmentSubmissions AssignmentSubmission[]
   submissionFiles       SubmissionFile[]
   analyticsSnapshots    AnalyticsSnapshot[]
+  subscription          TenantSubscription?
+  platformRevenue       PlatformRevenue[]
 
   @@map("tenants")
 }
@@ -1796,4 +1798,133 @@ model DeviceToken {
   @@index([tenantId])
   @@index([userId])
   @@map("device_tokens")
+}
+
+// ════════════════════════════════════════════════════════
+// PLATFORM ADMINISTRATION (not tenant-scoped)
+// ════════════════════════════════════════════════════════
+
+enum PlatformRole {
+  SUPER_ADMIN
+  PLATFORM_SUPPORT
+  PLATFORM_BILLING
+}
+
+model PlatformAdmin {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String       @unique @db.VarChar(255)
+  name         String       @db.VarChar(200)
+  passwordHash String       @map("password_hash") @db.VarChar(255)
+  role         PlatformRole @default(SUPER_ADMIN)
+  isActive     Boolean      @default(true) @map("is_active")
+  lastLoginAt  DateTime?    @map("last_login_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  auditLogs PlatformAuditLog[]
+
+  @@index([email])
+  @@map("platform_admins")
+}
+
+enum SubscriptionPlan {
+  FREE_TRIAL
+  STARTER
+  GROWTH
+  PROFESSIONAL
+  ENTERPRISE
+  CUSTOM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIAL
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+  EXPIRED
+}
+
+model TenantSubscription {
+  id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String             @unique @map("tenant_id") @db.Uuid
+  plan     SubscriptionPlan   @default(FREE_TRIAL)
+  status   SubscriptionStatus @default(TRIAL)
+
+  maxStudents      Int     @default(50) @map("max_students")
+  maxTeachers      Int     @default(5) @map("max_teachers")
+  maxBatches       Int     @default(5) @map("max_batches")
+  maxStorageGb     Int     @default(5) @map("max_storage_gb")
+  aiEnabled        Boolean @default(false) @map("ai_enabled")
+  omrEnabled       Boolean @default(false) @map("omr_enabled")
+  videoEnabled     Boolean @default(false) @map("video_enabled")
+  analyticsEnabled Boolean @default(true) @map("analytics_enabled")
+  whatsappEnabled  Boolean @default(false) @map("whatsapp_enabled")
+
+  monthlyPriceInr    Decimal   @default(0) @map("monthly_price_inr") @db.Decimal(10, 2)
+  billingCycleDay    Int       @default(1) @map("billing_cycle_day")
+  trialEndsAt        DateTime? @map("trial_ends_at")
+  currentPeriodStart DateTime? @map("current_period_start")
+  currentPeriodEnd   DateTime? @map("current_period_end")
+
+  currentStudentCount   Int     @default(0) @map("current_student_count")
+  currentTeacherCount   Int     @default(0) @map("current_teacher_count")
+  currentStorageUsedMb  Decimal @default(0) @map("current_storage_used_mb") @db.Decimal(10, 2)
+
+  totalPaidInr  Decimal   @default(0) @map("total_paid_inr") @db.Decimal(12, 2)
+  lastPaymentAt DateTime? @map("last_payment_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([plan])
+  @@map("tenant_subscriptions")
+}
+
+model PlatformAuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId    String   @map("admin_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  targetType String   @map("target_type") @db.VarChar(50)
+  targetId   String?  @map("target_id") @db.Uuid
+  details    Json?
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  admin PlatformAdmin @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("platform_audit_logs")
+}
+
+model PlatformRevenue {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  month    String @db.VarChar(7)
+
+  subscriptionInr Decimal @default(0) @map("subscription_inr") @db.Decimal(10, 2)
+  aiUsageInr      Decimal @default(0) @map("ai_usage_inr") @db.Decimal(10, 2)
+  smsUsageInr     Decimal @default(0) @map("sms_usage_inr") @db.Decimal(10, 2)
+  storageInr      Decimal @default(0) @map("storage_inr") @db.Decimal(10, 2)
+  totalInr        Decimal @default(0) @map("total_inr") @db.Decimal(10, 2)
+
+  paidAt DateTime? @map("paid_at")
+  isPaid Boolean   @default(false) @map("is_paid")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, month])
+  @@index([month])
+  @@index([tenantId])
+  @@map("platform_revenue")
 }

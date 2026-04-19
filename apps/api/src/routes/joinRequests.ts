@@ -5,6 +5,7 @@ import { pickLeastFullBatch } from "@/lib/algorithms/workload-balance";
 import { Errors } from "@/lib/errors";
 import { ok, paginated } from "@/lib/response";
 import { authenticate, requireRole } from "@/middleware/auth";
+import { assertUnderLimit } from "@/middleware/feature-gate";
 import { notifySafe } from "@/services/notification.service";
 
 function currentAcademicYear(): string {
@@ -66,6 +67,11 @@ joinRequestsRouter.post("/:id/approve", async (req, res) => {
   });
   if (!jr) throw Errors.notFound("Join request");
   if (jr.status !== "PENDING") throw Errors.badRequest("This request has already been processed");
+
+  const currentStudents = await prisma.student.count({
+    where: { tenantId, deletedAt: null },
+  });
+  await assertUnderLimit(tenantId, "maxStudents", currentStudents, "Student");
 
   // G2 — Workload balance: if no batch specified and we have a class, pick the least-full batch
   let effectiveBatchId = jr.batchId;

@@ -4,7 +4,55 @@ import { AuthGuard } from "@/components/guards/AuthGuard";
 import { RoleGuard } from "@/components/guards/RoleGuard";
 import { PageSkeleton } from "@/components/primitives";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { PlatformAdminLayout } from "@/layouts/platform/PlatformAdminLayout";
 import { PortalLayout } from "@/layouts/PortalLayout";
+
+// ═══ Platform admin (lazy) ═══
+const PlatformLoginPage = lazy(() =>
+  import("@/pages/platform-admin/PlatformLoginPage").then((m) => ({
+    default: m.PlatformLoginPage,
+  })),
+);
+const PlatformDashboardPage = lazy(() =>
+  import("@/pages/platform-admin/DashboardPage").then((m) => ({
+    default: m.DashboardPage,
+  })),
+);
+const PlatformTenantsPage = lazy(() =>
+  import("@/pages/platform-admin/TenantsPage").then((m) => ({
+    default: m.TenantsPage,
+  })),
+);
+const PlatformTenantDetailPage = lazy(() =>
+  import("@/pages/platform-admin/TenantDetailPage").then((m) => ({
+    default: m.TenantDetailPage,
+  })),
+);
+const PlatformRevenuePage = lazy(() =>
+  import("@/pages/platform-admin/RevenuePage").then((m) => ({
+    default: m.RevenuePage,
+  })),
+);
+const PlatformGrowthPage = lazy(() =>
+  import("@/pages/platform-admin/GrowthPage").then((m) => ({
+    default: m.GrowthPage,
+  })),
+);
+const PlatformSystemPage = lazy(() =>
+  import("@/pages/platform-admin/SystemPage").then((m) => ({
+    default: m.SystemPage,
+  })),
+);
+const PlatformAdminsPage = lazy(() =>
+  import("@/pages/platform-admin/AdminsPage").then((m) => ({
+    default: m.AdminsPage,
+  })),
+);
+const PlatformAuditLogPage = lazy(() =>
+  import("@/pages/platform-admin/AuditLogPage").then((m) => ({
+    default: m.AuditLogPage,
+  })),
+);
 
 const LoginPage = lazy(() =>
   import("@/pages/login/LoginPage").then((m) => ({ default: m.LoginPage })),
@@ -519,5 +567,23 @@ export const router = createBrowserRouter([
   },
   { path: "/portal", element: <Navigate to="/portal/student" replace /> },
   { path: "/parent", element: <Navigate to="/portal/parent" replace /> },
+
+  // ═══ Platform admin (separate auth, dark theme) ═══
+  { path: "/platform-admin/login", element: lazyPage(<PlatformLoginPage />) },
+  {
+    path: "/platform-admin",
+    element: <PlatformAdminLayout />,
+    children: [
+      { index: true, element: lazyPage(<PlatformDashboardPage />) },
+      { path: "tenants", element: lazyPage(<PlatformTenantsPage />) },
+      { path: "tenants/:id", element: lazyPage(<PlatformTenantDetailPage />) },
+      { path: "revenue", element: lazyPage(<PlatformRevenuePage />) },
+      { path: "growth", element: lazyPage(<PlatformGrowthPage />) },
+      { path: "system", element: lazyPage(<PlatformSystemPage />) },
+      { path: "admins", element: lazyPage(<PlatformAdminsPage />) },
+      { path: "audit", element: lazyPage(<PlatformAuditLogPage />) },
+    ],
+  },
+
   { path: "*", element: <Navigate to="/login" replace /> },
 ]);
