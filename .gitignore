@@ -5,35 +5,81 @@ node_modules/
 # Build outputs
 dist/
 build/
+out/
 .turbo/
 .next/
 
-# Environment
+# Environment files
 .env
 .env.local
 .env.*.local
 !.env.example
 
-# Logs
-*.log
-logs/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Editor
+# IDE
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
 .idea/
+*.swp
+*.swo
+*~
 
-# Misc
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# Coverage & testing
 coverage/
+.nyc_output/
+test-results/
 *.tsbuildinfo
+
+# Prisma local dbs
+packages/db/prisma/*.db
+packages/db/prisma/*.db-journal
 
 # Docker volumes (keep the yml, ignore runtime data)
 infra/docker/data/
 
-# Local file uploads (dev mode storage fallback)
+# Uploads (user-generated content)
 apps/api/uploads/
+uploads/
+temp/
+
+# Python ML service
+services/ml-service/__pycache__/
+services/ml-service/**/__pycache__/
+services/ml-service/*.pyc
+services/ml-service/**/*.pyc
+services/ml-service/.venv/
+services/ml-service/venv/
+services/ml-service/app/models/trained/*.pkl
+services/ml-service/app/models/trained/*.joblib
+
+# Mobile
+apps/mobile/android/.gradle/
+apps/mobile/android/app/build/
+apps/mobile/android/build/
+apps/mobile/android/local.properties
+apps/mobile/ios/Pods/
+apps/mobile/.expo/
+
+# Desktop
+apps/desktop/dist/
+apps/desktop/release/
+
+# Docker
+*.pid
+
+# Secrets & keys — NEVER commit these
+*.pem
+*.key
+*.cert
+*.p12
