@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { compareSync, hashSync } from "bcryptjs";
 import { type NextFunction, type Request, type Response, Router } from "express";
 import { z } from "zod";
-import { prisma } from "@/config/db";
+import { prisma, withTenantTransaction } from "@/config/db";
 import { env } from "@/config/env";
 import { Errors } from "@/lib/errors";
 import { signAccessToken, signResetToken, verifyResetToken } from "@/lib/jwt";
@@ -65,23 +65,24 @@ async function createSession(userId: string, tenantId: string, role: string, req
   const refreshToken = randomUUID();
   const expiresAt = new Date(Date.now() + env.JWT_REFRESH_TTL * 1000);
 
-  await prisma.session.create({
-    data: {
-      userId,
-      tenantId,
-      refreshToken,
-      userAgent: req.headers["user-agent"]?.slice(0, 500) ?? null,
-      ipAddress: (req.ip || req.socket.remoteAddress || "unknown").slice(0, 45),
-      expiresAt,
-    },
+  await withTenantTransaction(prisma, tenantId, async (tx) => {
+    await tx.session.create({
+      data: {
+        userId,
+        tenantId,
+        refreshToken,
+        userAgent: req.headers["user-agent"]?.slice(0, 500) ?? null,
+        ipAddress: (req.ip || req.socket.remoteAddress || "unknown").slice(0, 45),
+        expiresAt,
+      },
+    });
+    await tx.user.update({
+      where: { id: userId },
+      data: { lastLoginAt: new Date() },
+    });
   });
 
   const accessToken = signAccessToken({ sub: userId, tid: tenantId, role });
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { lastLoginAt: new Date() },
-  });
 
   return { accessToken, refreshToken };
 }
@@ -103,9 +104,11 @@ authRouter.post(
     const { tenantSlug, email, password } = req.body;
     const tenant = await resolveTenant(tenantSlug);
 
-    const user = await prisma.user.findUnique({
-      where: { tenantId_email: { tenantId: tenant.id, email }, deletedAt: null },
-    });
+    const user = await withTenantTransaction(prisma, tenant.id, (tx) =>
+      tx.user.findUnique({
+        where: { tenantId_email: { tenantId: tenant.id, email }, deletedAt: null },
+      }),
+    );
 
     if (!user) throw Errors.unauthorized("Invalid email or password");
 

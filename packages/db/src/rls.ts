@@ -1,6 +1,13 @@
 import { PrismaClient } from "@prisma/client";
 
 export async function enableRLS(prisma: PrismaClient): Promise<void> {
+  if (process.env.NODE_ENV !== "production") {
+    console.log(
+      `[rls] skipping enableRLS (NODE_ENV=${process.env.NODE_ENV ?? "undefined"}, only runs when NODE_ENV=production)`,
+    );
+    return;
+  }
+
   const tenantScopedTables = [
     "users",
     "sessions",

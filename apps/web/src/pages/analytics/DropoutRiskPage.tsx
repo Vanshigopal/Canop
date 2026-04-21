@@ -103,15 +103,51 @@ export function DropoutRiskPage() {
       </div>
 
       {serviceError && (
-        <div className="glass-panel p-4 border-l-4 border-warning">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-medium text-text-primary">ML service unavailable</div>
-              <div className="text-xs text-text-muted mt-1">{serviceError}</div>
+        <div className="glass-panel p-6">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-10 h-10 rounded-full bg-[#FEF3C7] grid place-items-center">
+              <AlertTriangle size={20} className="text-[#D97706]" />
             </div>
-            <Button size="sm" onClick={bootstrap} loading={bootstrapping}>
-              Retry & bootstrap models
-            </Button>
+            <div className="flex-1 min-w-0">
+              <div className="text-base font-semibold text-text-primary mb-1">
+                ML Service Offline
+              </div>
+              <div className="text-sm text-text-muted mb-3">
+                The dropout risk prediction model requires the ML service to be running. Start it
+                with:
+              </div>
+              <code className="block text-xs bg-[#FAF7F2] text-text-primary rounded-md px-3 py-2 font-mono mb-4">
+                cd services/ml && python main.py
+              </code>
+              <Button size="sm" variant="secondary" onClick={bootstrap} loading={bootstrapping}>
+                <RefreshCw size={13} /> Retry & bootstrap models
+              </Button>
+            </div>
+          </div>
+          <div className="mt-6 pt-5 border-t border-border-soft">
+            <div className="text-2xs uppercase tracking-wider text-text-dim mb-2">
+              While ML is offline, you can review:
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/analytics/engagement"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/80 border border-border-soft text-xs text-text-primary hover:bg-white"
+              >
+                Engagement Analytics
+              </Link>
+              <Link
+                to="/analytics/attendance"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/80 border border-border-soft text-xs text-text-primary hover:bg-white"
+              >
+                Attendance Reports
+              </Link>
+              <Link
+                to="/analytics/academic"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/80 border border-border-soft text-xs text-text-primary hover:bg-white"
+              >
+                Exam Results
+              </Link>
+            </div>
           </div>
         </div>
       )}

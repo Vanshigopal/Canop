@@ -59,7 +59,16 @@ broadcastsRouter.post(
       if (!perms?.canSendBroadcasts) throw Errors.forbidden();
     }
 
-    const recipients = await resolveAudience(tenantId, body.audienceType, body.audienceFilter);
+    const typesToResolve =
+      body.audienceTypes && body.audienceTypes.length > 0
+        ? body.audienceTypes
+        : [body.audienceType];
+    const recipientSet = new Set<string>();
+    for (const t of typesToResolve) {
+      const ids = await resolveAudience(tenantId, t, body.audienceFilter);
+      for (const id of ids) recipientSet.add(id);
+    }
+    const recipients = Array.from(recipientSet);
     if (recipients.length === 0) {
       throw Errors.badRequest("Audience resolved to 0 recipients", "AUDIENCE_EMPTY");
     }

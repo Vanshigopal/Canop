@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, Bell, Inbox, MessageSquare, Plus, Send, Settings } from "lucide-react";
+import { BarChart3, Bell, Check, Inbox, MessageSquare, Plus, Send, Settings } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -187,7 +187,7 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [channels, setChannels] = useState<Set<Channel>>(new Set(["WHATSAPP", "SMS"]));
-  const [audienceType, setAudienceType] = useState<AudienceType>("ALL_PARENTS");
+  const [audienceTypes, setAudienceTypes] = useState<Set<AudienceType>>(new Set(["ALL_PARENTS"]));
   const [batches, setBatches] = useState<Array<{ id: string; name: string }>>([]);
   const [classes, setClasses] = useState<Array<{ id: string; name: string }>>([]);
   const [students, setStudents] = useState<
@@ -202,6 +202,15 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
   const [recipientCount, setRecipientCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
+  function toggleAudienceType(t: AudienceType) {
+    setAudienceTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+  }
+
   useEffect(() => {
     api.get("/api/v1/batches").then((r) => setBatches(r.data.data));
     api.get("/api/v1/classes").then((r) => setClasses(r.data.data));
@@ -210,19 +219,14 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
 
   useEffect(() => {
     let count = 0;
-    if (audienceType === "ALL_STUDENTS") count = students.length;
-    else if (audienceType === "ALL_PARENTS" || audienceType === "ALL_MEMBERS") count = students.length;
-    else if (audienceType === "BATCH") {
-      count = students.filter((s) => {
-        const b = batches.find((bt) => bt.id && selectedBatches.has(bt.id));
-        return b && s.batch?.name === b.name;
-      }).length;
-      // Simple upper-bound — server does the authoritative count
-      if (selectedBatches.size > 0 && count === 0) count = selectedBatches.size;
-    } else if (audienceType === "CLASS") count = selectedClasses.size;
-    else if (audienceType === "CUSTOM") count = selectedStudents.size;
+    if (audienceTypes.has("ALL_STUDENTS")) count = Math.max(count, students.length);
+    if (audienceTypes.has("ALL_PARENTS") || audienceTypes.has("ALL_MEMBERS"))
+      count = Math.max(count, students.length);
+    if (audienceTypes.has("BATCH") && selectedBatches.size > 0) count += selectedBatches.size * 20;
+    if (audienceTypes.has("CLASS") && selectedClasses.size > 0) count += selectedClasses.size;
+    if (audienceTypes.has("CUSTOM") && selectedStudents.size > 0) count += selectedStudents.size;
     setRecipientCount(count);
-  }, [audienceType, batches, classes, students, selectedBatches, selectedClasses, selectedStudents]);
+  }, [audienceTypes, batches, classes, students, selectedBatches, selectedClasses, selectedStudents]);
 
   function toggleChannel(c: Channel) {
     setChannels((prev) => {
@@ -241,19 +245,21 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
   }
 
   function buildPayload() {
+    const types = Array.from(audienceTypes);
+    const primary = types[0] ?? "ALL_MEMBERS";
     const payload: Record<string, unknown> = {
       title,
       message,
       channels: Array.from(channels),
-      audienceType,
+      audienceType: primary,
+      audienceTypes: types,
     };
-    if (audienceType === "BATCH") {
-      payload.audienceFilter = { batchIds: Array.from(selectedBatches) };
-    } else if (audienceType === "CLASS") {
-      payload.audienceFilter = { classIds: Array.from(selectedClasses) };
-    } else if (audienceType === "CUSTOM") {
-      payload.audienceFilter = { studentIds: Array.from(selectedStudents) };
-    }
+    const filter: Record<string, string[]> = {};
+    if (audienceTypes.has("BATCH")) filter.batchIds = Array.from(selectedBatches);
+    if (audienceTypes.has("CLASS")) filter.classIds = Array.from(selectedClasses);
+    if (audienceTypes.has("CUSTOM")) filter.studentIds = Array.from(selectedStudents);
+    if (Object.keys(filter).length > 0) payload.audienceFilter = filter;
+
     if (scheduleEnabled && scheduledAt) {
       payload.scheduledAt = new Date(scheduledAt).toISOString();
     } else {
@@ -271,6 +277,7 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
       onToast("Broadcast queued");
       setTitle("");
       setMessage("");
+      setAudienceTypes(new Set(["ALL_PARENTS"]));
       setSelectedBatches(new Set());
       setSelectedClasses(new Set());
       setSelectedStudents(new Set());
@@ -290,9 +297,10 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
     title.trim().length > 0 &&
     message.trim().length > 0 &&
     channels.size > 0 &&
-    (audienceType !== "BATCH" || selectedBatches.size > 0) &&
-    (audienceType !== "CLASS" || selectedClasses.size > 0) &&
-    (audienceType !== "CUSTOM" || selectedStudents.size > 0);
+    audienceTypes.size > 0 &&
+    (!audienceTypes.has("BATCH") || selectedBatches.size > 0) &&
+    (!audienceTypes.has("CLASS") || selectedClasses.size > 0) &&
+    (!audienceTypes.has("CUSTOM") || selectedStudents.size > 0);
 
   const activeChannel: Channel = channels.has("SMS") ? "SMS" : channels.has("WHATSAPP") ? "WHATSAPP" : "EMAIL";
 
@@ -323,13 +331,13 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
                 type="button"
                 key={c}
                 onClick={() => toggleChannel(c)}
-                className={`px-3 py-1.5 rounded-md border text-xs font-semibold transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-semibold transition-colors ${
                   channels.has(c)
                     ? "border-indigo bg-indigo/10 text-indigo"
                     : "border-border-soft bg-white/60 text-text-muted hover:bg-white"
                 }`}
               >
-                {channels.has(c) ? "✓ " : ""}
+                {channels.has(c) && <Check size={12} />}
                 {c}
               </button>
             ))}
@@ -337,7 +345,9 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
         </div>
 
         <div>
-          <label className="block text-2xs uppercase tracking-wider text-text-dim mb-1">Audience</label>
+          <label className="block text-2xs uppercase tracking-wider text-text-dim mb-1">
+            Audience <span className="normal-case text-text-dim">· select one or more</span>
+          </label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {(
               [
@@ -348,23 +358,26 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
                 ["CLASS", "Specific Class(es)"],
                 ["CUSTOM", "Custom List"],
               ] as const
-            ).map(([val, label]) => (
-              <button
-                type="button"
-                key={val}
-                onClick={() => setAudienceType(val)}
-                className={`px-3 py-2 rounded-md border text-xs text-left transition-colors ${
-                  audienceType === val
-                    ? "border-indigo bg-indigo/10 text-indigo font-semibold"
-                    : "border-border-soft bg-white/60 text-text-muted hover:bg-white"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            ).map(([val, label]) => {
+              const selected = audienceTypes.has(val);
+              return (
+                <button
+                  type="button"
+                  key={val}
+                  onClick={() => toggleAudienceType(val)}
+                  className={`px-3 py-2 rounded-md border text-xs text-left transition-colors ${
+                    selected
+                      ? "border-indigo bg-indigo text-white font-semibold"
+                      : "border-border-soft bg-white/60 text-text-primary hover:bg-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
-          {audienceType === "BATCH" && (
+          {audienceTypes.has("BATCH") && (
             <div className="mt-3 max-h-40 overflow-y-auto border border-border-soft rounded-md divide-y divide-border-soft">
               {batches.map((b) => (
                 <label
@@ -383,7 +396,7 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
             </div>
           )}
 
-          {audienceType === "CLASS" && (
+          {audienceTypes.has("CLASS") && (
             <div className="mt-3 max-h-40 overflow-y-auto border border-border-soft rounded-md divide-y divide-border-soft">
               {classes.map((c) => (
                 <label
@@ -402,7 +415,7 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
             </div>
           )}
 
-          {audienceType === "CUSTOM" && (
+          {audienceTypes.has("CUSTOM") && (
             <div className="mt-3 max-h-40 overflow-y-auto border border-border-soft rounded-md divide-y divide-border-soft">
               {students.map((s) => (
                 <label
@@ -448,7 +461,16 @@ function ComposeTab({ onToast }: { onToast: (s: string) => void }) {
         <div className="text-2xs uppercase tracking-wider text-text-dim mb-3">Summary</div>
         <div className="space-y-3 text-sm">
           <Row label="Channels" value={Array.from(channels).join(", ") || "—"} />
-          <Row label="Audience" value={audienceType.replace(/_/g, " ").toLowerCase()} />
+          <Row
+            label="Audience"
+            value={
+              audienceTypes.size === 0
+                ? "—"
+                : Array.from(audienceTypes)
+                    .map((t) => t.replace(/_/g, " ").toLowerCase())
+                    .join(", ")
+            }
+          />
           <Row
             label="Recipients"
             value={recipientCount !== null ? `~${recipientCount}` : "—"}

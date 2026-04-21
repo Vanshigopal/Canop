@@ -224,31 +224,35 @@ export function AssignmentDetailModal({
             </div>
 
             <div>
-              <h3 className="text-xs font-medium text-text-muted mb-1">Description</h3>
-              <p className="text-sm whitespace-pre-wrap">{detail.description}</p>
+              <h3 className="text-[13px] font-medium text-text-primary mb-1">Description</h3>
+              <p className="text-sm text-text-primary whitespace-pre-wrap">{detail.description}</p>
             </div>
 
             {detail.instructions && (
               <div>
-                <h3 className="text-xs font-medium text-text-muted mb-1">Instructions</h3>
-                <p className="text-sm whitespace-pre-wrap">{detail.instructions}</p>
+                <h3 className="text-[13px] font-medium text-text-primary mb-1">Instructions</h3>
+                <p className="text-sm text-text-primary whitespace-pre-wrap">{detail.instructions}</p>
               </div>
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div>
-                <div className="text-xs text-text-dim">Deadline</div>
-                <div className={deadline && deadline < now ? "text-danger" : ""}>
+                <div className="text-[13px] font-medium text-text-primary mb-0.5">Deadline</div>
+                <div
+                  className={
+                    deadline && deadline < now ? "text-[#DC2626] font-medium" : "text-text-primary"
+                  }
+                >
                   {deadline?.toLocaleString()}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-text-dim">Total marks</div>
-                <div>{Number(detail.totalMarks)}</div>
+                <div className="text-[13px] font-medium text-text-primary mb-0.5">Total marks</div>
+                <div className="text-text-primary">{Number(detail.totalMarks)}</div>
               </div>
               <div>
-                <div className="text-xs text-text-dim">Late policy</div>
-                <div>
+                <div className="text-[13px] font-medium text-text-primary mb-0.5">Late policy</div>
+                <div className="text-text-primary">
                   {detail.allowLateSubmission
                     ? `Allowed${
                         detail.latePenaltyPercent
@@ -262,7 +266,7 @@ export function AssignmentDetailModal({
 
             {detail.attachments.length > 0 && (
               <div>
-                <h3 className="text-xs font-medium text-text-muted mb-2">
+                <h3 className="text-[13px] font-medium text-text-primary mb-2">
                   Attached files ({detail.attachments.length})
                 </h3>
                 <div className="space-y-1">
@@ -284,7 +288,7 @@ export function AssignmentDetailModal({
 
             {isStudent && detail.status === "PUBLISHED" && (
               <div className="border-t border-border-soft pt-4">
-                <h3 className="text-xs font-medium text-text-muted mb-2">Your submission</h3>
+                <h3 className="text-[13px] font-medium text-text-primary mb-2">Your submission</h3>
                 {detail.mySubmission?.submittedAt ? (
                   <div className="mb-3 text-sm">
                     <div>
@@ -354,7 +358,7 @@ export function AssignmentDetailModal({
             {canManage && detail.submissions && (
               <div className="border-t border-border-soft pt-4">
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                  <h3 className="text-xs font-medium text-text-muted">
+                  <h3 className="text-[13px] font-medium text-text-primary">
                     Submissions ({detail.submissions.length})
                   </h3>
                   <div className="flex gap-2">
@@ -377,9 +381,13 @@ export function AssignmentDetailModal({
                     </div>
                   )}
                   {detail.submissions.map((s) => (
-                    <div key={s.id} className="glass-panel p-3">
+                    <div
+                      key={s.id}
+                      className="glass-panel p-3 border border-border-soft"
+                      style={{ borderColor: "#E8E3DA" }}
+                    >
                       <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                        <div className="font-medium text-sm">
+                        <div className="font-medium text-sm text-text-primary">
                           {s.student?.user.name ?? "Student"}
                         </div>
                         <Badge tone={s.status === "GRADED" ? "accent" : "info"}>

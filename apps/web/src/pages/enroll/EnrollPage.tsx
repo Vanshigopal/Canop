@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button, Input } from "@/components/primitives";
+import { CheckCircle } from "lucide-react";
 import axios from "axios";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -119,7 +120,7 @@ export function EnrollPage() {
       <div className="min-h-screen bg-bg-base flex items-center justify-center p-6">
         <div className="glass-panel p-8 max-w-md text-center">
           <div className="w-12 h-12 rounded-full bg-pastel-sage grid place-items-center mx-auto mb-4">
-            <span className="text-success text-xl">✓</span>
+            <CheckCircle size={22} className="text-success" />
           </div>
           <h2 className="font-display text-xl mb-2">Application Submitted</h2>
           <p className="text-sm text-text-muted mb-4">

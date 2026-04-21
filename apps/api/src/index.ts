@@ -24,6 +24,7 @@ import { classesRouter } from "@/routes/classes";
 import { deliveriesRouter } from "@/routes/deliveries";
 import { dropoutRouter } from "@/routes/dropout";
 import { enrollmentRouter } from "@/routes/enrollment";
+import { eventsRouter } from "@/routes/events";
 import { examsRouter } from "@/routes/exams";
 import { feeCategoriesRouter } from "@/routes/feeCategories";
 import { feePlansRouter } from "@/routes/feePlans";
@@ -35,6 +36,7 @@ import { invitesRouter } from "@/routes/invites";
 import { joinRequestsRouter } from "@/routes/joinRequests";
 import { assignmentsRouter } from "@/routes/assignments";
 import { analyticsRouter } from "@/routes/analytics";
+import { answerKeysRouter } from "@/routes/answerKeys";
 import { dashboardConfigRouter } from "@/routes/dashboard-config";
 import { exportsRouter } from "@/routes/exports";
 import { llmConfigRouter } from "@/routes/llm-config";
@@ -167,6 +169,8 @@ app.use("/api/v1/assignments", assignmentsRouter);
 app.use("/api/v1/analytics", requireFeature("analytics"), analyticsRouter);
 app.use("/api/v1/dashboard", dashboardConfigRouter);
 app.use("/api/v1/exports", exportsRouter);
+app.use("/api/v1/events", eventsRouter);
+app.use("/api/v1/answer-keys", answerKeysRouter);
 
 // Sentry error-capture
 if (env.SENTRY_DSN) {

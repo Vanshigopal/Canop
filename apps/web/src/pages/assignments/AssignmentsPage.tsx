@@ -2,7 +2,7 @@ import { Badge, Button } from "@/components/primitives";
 import { useSocket } from "@/hooks/useSocket";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth";
-import { ClipboardList, Plus } from "lucide-react";
+import { BarChart3, BookOpen, ClipboardList, Clock, GraduationCap, Inbox, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AssignmentDetailModal } from "./AssignmentDetailModal";
 import { CreateAssignmentModal } from "./CreateAssignmentModal";
@@ -197,14 +197,30 @@ export function AssignmentsPage() {
                     {a.description}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-text-dim flex-wrap">
-                    {a.subject && <span>📚 {a.subject.name}</span>}
-                    {a.batch && <span>🎓 {a.batch.name}</span>}
-                    <span className={isPastDeadline ? "text-danger" : ""}>
-                      ⏰ Due {deadline.toLocaleString()}
+                    {a.subject && (
+                      <span className="inline-flex items-center gap-1">
+                        <BookOpen size={12} /> {a.subject.name}
+                      </span>
+                    )}
+                    {a.batch && (
+                      <span className="inline-flex items-center gap-1">
+                        <GraduationCap size={12} /> {a.batch.name}
+                      </span>
+                    )}
+                    <span
+                      className={`inline-flex items-center gap-1 ${
+                        isPastDeadline ? "text-danger" : ""
+                      }`}
+                    >
+                      <Clock size={12} /> Due {deadline.toLocaleString()}
                     </span>
-                    <span>📊 {Number(a.totalMarks)} marks</span>
+                    <span className="inline-flex items-center gap-1">
+                      <BarChart3 size={12} /> {Number(a.totalMarks)} marks
+                    </span>
                     {!isStudent && a._count && (
-                      <span>📥 {a._count.submissions} submissions</span>
+                      <span className="inline-flex items-center gap-1">
+                        <Inbox size={12} /> {a._count.submissions} submissions
+                      </span>
                     )}
                     {a.mySubmission?.marksAwarded !== undefined &&
                       a.mySubmission?.marksAwarded !== null && (

@@ -1,6 +1,6 @@
 import { Badge } from "@/components/primitives";
 import { api } from "@/lib/api";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowRight, Check, Minus, TrendingDown, TrendingUp, X as XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SubjectStrengthSection } from "../widgets/SubjectStrengthSection";
 import { EngagementScoreCard } from "../widgets/EngagementScoreCard";
@@ -288,9 +288,19 @@ export function AcademicTab({ studentId }: { studentId: string }) {
                   <td className="px-4 py-3 text-text-primary">
                     {row.examName}
                     {row.mcqBreakdown && (
-                      <div className="text-2xs text-text-dim mt-0.5 font-mono">
-                        {row.mcqBreakdown.correct}✓ / {row.mcqBreakdown.incorrect}✗ /{" "}
-                        {row.mcqBreakdown.unattempted}−
+                      <div className="text-2xs text-text-dim mt-0.5 font-mono inline-flex items-center gap-2">
+                        <span className="inline-flex items-center gap-0.5">
+                          {row.mcqBreakdown.correct}
+                          <Check size={10} className="text-success" />
+                        </span>
+                        <span className="inline-flex items-center gap-0.5">
+                          {row.mcqBreakdown.incorrect}
+                          <XIcon size={10} className="text-danger" />
+                        </span>
+                        <span className="inline-flex items-center gap-0.5">
+                          {row.mcqBreakdown.unattempted}
+                          <Minus size={10} />
+                        </span>
                       </div>
                     )}
                   </td>
@@ -314,7 +324,7 @@ export function AcademicTab({ studentId }: { studentId: string }) {
                         <TrendingDown size={12} className="text-danger" />
                       )}
                       {row.trendDirection === "stable" && (
-                        <span className="text-text-dim text-2xs">→</span>
+                        <ArrowRight size={12} className="text-text-dim" />
                       )}
                     </span>
                   </td>
@@ -354,7 +364,7 @@ function retestCell(row: ResultRow) {
           <span className="px-2 py-0.5 rounded bg-danger/5 text-danger border border-danger/15">
             {r.originalMarks}/{row.totalMarks} ({r.originalPercentage}%)
           </span>
-          <span className="text-text-dim">→</span>
+          <ArrowRight size={12} className="text-text-dim" />
           <span
             className={`px-2 py-0.5 rounded border ${
               r.retestIsPassed

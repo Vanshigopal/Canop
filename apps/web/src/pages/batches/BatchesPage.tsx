@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
-import { Button, Input, Badge } from "@/components/primitives";
+import { Button, Input, Badge, CustomSelect } from "@/components/primitives";
 import { Plus, Users, BookOpen, X } from "lucide-react";
 
 interface Batch {
@@ -73,7 +74,11 @@ export function BatchesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {batches.map((b) => (
-            <div key={b.id} className="glass-panel p-5">
+            <Link
+              key={b.id}
+              to={`/batches/${b.id}`}
+              className="glass-panel p-5 block hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-200 cursor-pointer"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="font-medium text-text-primary">{b.name}</h3>
@@ -94,7 +99,7 @@ export function BatchesPage() {
                   ))}
                 </div>
               )}
-            </div>
+            </Link>
           ))}
           {batches.length === 0 && (
             <div className="col-span-full text-center py-12 text-text-dim text-sm">No batches created yet</div>
@@ -112,18 +117,14 @@ export function BatchesPage() {
             {error && <div className="mb-4 rounded-lg bg-danger/8 border border-danger/20 px-4 py-2.5 text-xs text-danger">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-3">
               <Input label="Batch Name" placeholder="11-A" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-text-muted">Class</label>
-                <select
-                  value={form.classId}
-                  onChange={(e) => setForm({ ...form, classId: e.target.value })}
-                  required
-                  className="w-full rounded-md border border-border-soft bg-white/92 px-3.5 py-2.5 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
-                >
-                  <option value="">Select class...</option>
-                  {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
+              <CustomSelect
+                label="Class"
+                required
+                value={form.classId}
+                onChange={(v) => setForm({ ...form, classId: v })}
+                placeholder="Select class..."
+                options={classes.map((c) => ({ value: c.id, label: c.name }))}
+              />
               <div className="grid grid-cols-2 gap-3">
                 <Input label="Capacity" type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
                 <Input label="Academic Year" placeholder="2025-2026" value={form.academicYear} onChange={(e) => setForm({ ...form, academicYear: e.target.value })} />

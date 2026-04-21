@@ -77,6 +77,7 @@ export const CreateBroadcastSchema = z.object({
   message: z.string().min(1).max(4096),
   channels: z.array(NotificationChannelEnum).min(1),
   audienceType: AudienceTypeEnum,
+  audienceTypes: z.array(AudienceTypeEnum).optional(),
   audienceFilter: AudienceFilterSchema.optional(),
   scheduledAt: z.string().datetime().nullable().optional(),
 });

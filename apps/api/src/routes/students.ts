@@ -7,6 +7,7 @@ import { ok, paginated } from "@/lib/response";
 import { trackRecentItem } from "@/lib/search/recency";
 import { authenticate, requireRole } from "@/middleware/auth";
 import { validate } from "@/middleware/validate";
+import { generateStudentReportPdf } from "@/services/student-report.service";
 
 export const studentsRouter = Router();
 
@@ -253,6 +254,27 @@ studentsRouter.post(
     return ok(res, { ...result, sourceBatchId, batchId, studentIds });
   },
 );
+
+studentsRouter.get("/:id/report", async (req, res) => {
+  const id = req.params.id as string;
+  const tenantId = req.user!.tenantId;
+  const student = await prisma.student.findFirst({
+    where: { id, tenantId, deletedAt: null },
+    include: { user: { select: { name: true } } },
+  });
+  if (!student) throw Errors.notFound("Student");
+
+  try {
+    const pdf = await generateStudentReportPdf({ studentId: id, tenantId });
+    const fileName = `${student.user.name.replace(/[^a-zA-Z0-9]/g, "-")}-report.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Length", String(pdf.length));
+    res.send(pdf);
+  } catch {
+    throw Errors.internal("Failed to generate report");
+  }
+});
 
 studentsRouter.delete("/:id", requireRole("ADMIN"), async (req, res) => {
   const id = req.params.id as string;

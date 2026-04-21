@@ -1,4 +1,4 @@
-import { Button } from "@/components/primitives";
+import { Button, CustomSelect } from "@/components/primitives";
 import { api } from "@/lib/api";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -102,7 +102,7 @@ export function UploadVideoModal({ subjects, onClose, onUploaded }: UploadVideoM
 
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">
+            <label className="block text-xs font-medium text-text-primary mb-1">
               Video file *
             </label>
             <input
@@ -119,7 +119,7 @@ export function UploadVideoModal({ subjects, onClose, onUploaded }: UploadVideoM
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Title *</label>
+            <label className="block text-xs font-medium text-text-primary mb-1">Title *</label>
             <input
               type="text"
               value={title}
@@ -131,34 +131,31 @@ export function UploadVideoModal({ subjects, onClose, onUploaded }: UploadVideoM
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Description</label>
+            <label className="block text-xs font-medium text-text-primary mb-1">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={1000}
               rows={2}
-              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15 resize-y"
+              style={{ borderColor: "#E8E3DA", borderWidth: 1 }}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">Subject</label>
-              <select
+              <CustomSelect
+                label="Subject"
                 value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
-              >
-                <option value="">—</option>
-                {subjects.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setSubjectId}
+                options={[
+                  { value: "", label: "—" },
+                  ...subjects.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+              />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">Chapter #</label>
+              <label className="block text-xs font-medium text-text-primary mb-1">Chapter #</label>
               <input
                 type="number"
                 min="1"
@@ -170,7 +167,7 @@ export function UploadVideoModal({ subjects, onClose, onUploaded }: UploadVideoM
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Chapter title</label>
+            <label className="block text-xs font-medium text-text-primary mb-1">Chapter title</label>
             <input
               type="text"
               value={chapterTitle}
@@ -181,20 +178,20 @@ export function UploadVideoModal({ subjects, onClose, onUploaded }: UploadVideoM
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Access</label>
-            <select
+            <CustomSelect
+              label="Access"
               value={accessType}
-              onChange={(e) => setAccessType(e.target.value as "BATCH" | "INSTITUTE")}
-              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
-            >
-              <option value="BATCH">Selected batches</option>
-              <option value="INSTITUTE">Everyone at institute</option>
-            </select>
+              onChange={(v) => setAccessType(v as "BATCH" | "INSTITUTE")}
+              options={[
+                { value: "BATCH", label: "Selected batches" },
+                { value: "INSTITUTE", label: "Everyone at institute" },
+              ]}
+            />
           </div>
 
           {accessType === "BATCH" && (
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">Batches</label>
+              <label className="block text-xs font-medium text-text-primary mb-1">Batches</label>
               <div className="space-y-1 max-h-40 overflow-y-auto border border-border-soft rounded-md p-2">
                 {batches.map((b) => (
                   <label key={b.id} className="flex items-center gap-2 text-sm">

@@ -11,7 +11,8 @@ function hashPassword(pw: string): string {
 async function main() {
   console.log("[seed] Starting...");
 
-  await enableRLS(prisma);
+  // RLS is enabled AFTER seeding — not before
+  // await enableRLS(prisma);
 
   // ── Tenants ──
   const demoTenant = await prisma.tenant.upsert({
@@ -383,7 +384,6 @@ async function main() {
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
 
-  // Session 1: 11-A LECTURE, 3 days ago, 09:00-10:00 (Biology)
   const attSession1 = await prisma.attendanceSession.upsert({
     where: {
       tenantId_batchId_type_date_startTime: {
@@ -427,7 +427,6 @@ async function main() {
     },
   });
 
-  // Session 2: 11-A LECTURE, 2 days ago, 09:00-10:00 (Chemistry) — Aarav LATE
   const attSession2 = await prisma.attendanceSession.upsert({
     where: {
       tenantId_batchId_type_date_startTime: {
@@ -473,7 +472,6 @@ async function main() {
     },
   });
 
-  // Session 3: NEET-2026 LECTURE, yesterday, 11:00-12:30 — Aarav attends as GUEST
   const attSession3 = await prisma.attendanceSession.upsert({
     where: {
       tenantId_batchId_type_date_startTime: {
@@ -551,8 +549,6 @@ async function main() {
   );
   console.log(`[seed] Fee categories: ${feeCategories.map((c) => c.name).join(", ")}`);
 
-  // ── Fee Plan for NEET-2026 ──
-  // Total ₹75,000 — 4 quarterly installments of ₹18,750 each
   const feePlan = await prisma.feePlan.upsert({
     where: {
       tenantId_batchId_academicYear: {
@@ -577,7 +573,6 @@ async function main() {
   });
   console.log(`[seed] Fee plan: ${feePlan.name} — ₹${feePlan.totalAmount}`);
 
-  // ── Fee Plan Items ──
   const planItems: Array<{ name: string; amount: number }> = [
     { name: "Tuition Fee", amount: 60000 },
     { name: "Lab Fee", amount: 8000 },
@@ -593,7 +588,6 @@ async function main() {
     });
   }
 
-  // ── StudentFee for Sneha (enrolled in NEET-2026) ──
   const totalAmt = 75000;
   const studentFee = await prisma.studentFee.upsert({
     where: {
@@ -616,8 +610,6 @@ async function main() {
     },
   });
 
-  // ── Installments: 4 quarterly, ₹18,750 each ──
-  // Q1 due Apr 1 2026 (paid), Q2 Jul 1, Q3 Oct 1, Q4 Jan 1 2027
   const per = 18750;
   const installmentSchedule = [
     { n: 1, date: new Date(Date.UTC(2026, 3, 1)), status: "PAID" as const, paidAmount: per },
@@ -649,7 +641,6 @@ async function main() {
     createdInstallments.push({ id: row.id, n: ins.n });
   }
 
-  // ── Payment for Q1 (cash, paid via admin) ──
   const q1Id = createdInstallments.find((i) => i.n === 1)!.id;
   await prisma.payment.upsert({
     where: { id: "00000000-0000-0000-0000-000000000100" },
@@ -680,167 +671,47 @@ async function main() {
     subject?: string;
     body: string;
   }> = [
-    {
-      name: "Absent Notification",
-      slug: "attendance_absent",
-      eventType: "attendance_absent",
-      channel: "WHATSAPP",
-      body: "Dear {parent_name}, your child {student_name} was marked absent today ({attendance_date}) at {institute_name}. If this is incorrect, please contact the institute.",
-    },
-    {
-      name: "Absent Notification (SMS)",
-      slug: "attendance_absent_sms",
-      eventType: "attendance_absent",
-      channel: "SMS",
-      body: "{student_name} was absent on {attendance_date} at {institute_name}. Contact institute if incorrect.",
-    },
-    {
-      name: "Fee Payment Receipt",
-      slug: "fee_paid",
-      eventType: "fee_paid",
-      channel: "WHATSAPP",
-      body: "Dear {parent_name}, payment of Rs.{fee_amount} received for {student_name}. Receipt: {receipt_number}. Pending: Rs.{fee_pending}. Thank you! — {institute_name}",
-    },
-    {
-      name: "Fee Reminder",
-      slug: "fee_reminder",
-      eventType: "fee_reminder",
-      channel: "WHATSAPP",
-      body: "Dear {parent_name}, installment #{installment_number} of Rs.{fee_amount} for {student_name} is due on {fee_due_date}. Please pay on time to avoid late fees. — {institute_name}",
-    },
-    {
-      name: "Fee Overdue",
-      slug: "fee_overdue",
-      eventType: "fee_overdue",
-      channel: "WHATSAPP",
-      body: "Dear {parent_name}, installment #{installment_number} of Rs.{fee_amount} for {student_name} is overdue. Due was {fee_due_date}. Total pending: Rs.{fee_pending}. Please pay at the earliest. — {institute_name}",
-    },
-    {
-      name: "Enrollment Approved",
-      slug: "enrollment_approved",
-      eventType: "enrollment_approved",
-      channel: "WHATSAPP",
-      body: "Welcome to {institute_name}! Your enrollment has been approved. You can now login using your phone number. Batch: {student_batch}.",
-    },
-    {
-      name: "Enrollment Approved (Parent)",
-      slug: "enrollment_approved_parent",
-      eventType: "enrollment_approved_parent",
-      channel: "WHATSAPP",
-      body: "Dear {parent_name}, {student_name} has been enrolled at {institute_name}. You can login with your phone number to track attendance, marks, and fees.",
-    },
-    {
-      name: "Marks Published",
-      slug: "marks_published",
-      eventType: "marks_published",
-      channel: "WHATSAPP",
-      body: "Dear {parent_name}, {exam_name} results are out. {student_name} scored {marks}/{total_marks} ({percentage}%) in {subject_name}. — {institute_name}",
-    },
-    {
-      name: "Teacher Welcome",
-      slug: "teacher_welcome",
-      eventType: "teacher_welcome",
-      channel: "EMAIL",
-      subject: "Welcome to {institute_name}",
-      body: "Welcome to {institute_name}! Your account has been created. Login at your institute's Canop portal to get started.",
-    },
-    {
-      name: "Retest Scheduled",
-      slug: "retest_scheduled",
-      eventType: "retest_scheduled",
-      channel: "WHATSAPP",
-      body: "Dear {student_name}, your retest for {exam_name} is scheduled on {retest_date} at {retest_time}. Please be on time. — {institute_name}",
-    },
-    {
-      name: "Retest Scheduled (Parent)",
-      slug: "retest_scheduled_parent",
-      eventType: "retest_scheduled_parent",
-      channel: "WHATSAPP",
-      body: "Dear {parent_name}, {student_name}'s retest for {exam_name} is scheduled on {retest_date} at {retest_time}. — {institute_name}",
-    },
-    {
-      name: "Retest No-Show Alert",
-      slug: "retest_no_show",
-      eventType: "retest_no_show",
-      channel: "IN_APP",
-      body: "{student_name} did not appear for the retest of {exam_name} scheduled at {retest_time} on {retest_date}.",
-    },
-    {
-      name: "Retest Results",
-      slug: "retest_results",
-      eventType: "retest_results",
-      channel: "WHATSAPP",
-      body: "Dear {parent_name}, {student_name} scored {marks}/{total_marks} ({percentage}%) in the {exam_name} retest. — {institute_name}",
-    },
-    {
-      name: "Assignment Published",
-      slug: "assignment_published",
-      eventType: "assignment_published",
-      channel: "WHATSAPP",
-      body: "New assignment for {student_name}: '{assignment_name}'. Due {deadline}, total {total_marks} marks. — {institute_name}",
-    },
-    {
-      name: "Assignment Graded",
-      slug: "assignment_graded",
-      eventType: "assignment_graded",
-      channel: "WHATSAPP",
-      body: "Dear {parent_name}, {student_name}'s assignment '{assignment_name}' has been graded. Score: {marks}/{total_marks}. — {institute_name}",
-    },
-    {
-      name: "Assignment Deadline Reminder",
-      slug: "assignment_deadline_reminder",
-      eventType: "assignment_deadline_reminder",
-      channel: "WHATSAPP",
-      body: "Reminder: {student_name}'s assignment '{assignment_name}' is due {deadline}. Please submit on time. — {institute_name}",
-    },
+    { name: "Absent Notification", slug: "attendance_absent", eventType: "attendance_absent", channel: "WHATSAPP", body: "Dear {parent_name}, your child {student_name} was marked absent today ({attendance_date}) at {institute_name}. If this is incorrect, please contact the institute." },
+    { name: "Absent Notification (SMS)", slug: "attendance_absent_sms", eventType: "attendance_absent", channel: "SMS", body: "{student_name} was absent on {attendance_date} at {institute_name}. Contact institute if incorrect." },
+    { name: "Fee Payment Receipt", slug: "fee_paid", eventType: "fee_paid", channel: "WHATSAPP", body: "Dear {parent_name}, payment of Rs.{fee_amount} received for {student_name}. Receipt: {receipt_number}. Pending: Rs.{fee_pending}. Thank you! — {institute_name}" },
+    { name: "Fee Reminder", slug: "fee_reminder", eventType: "fee_reminder", channel: "WHATSAPP", body: "Dear {parent_name}, installment #{installment_number} of Rs.{fee_amount} for {student_name} is due on {fee_due_date}. Please pay on time to avoid late fees. — {institute_name}" },
+    { name: "Fee Overdue", slug: "fee_overdue", eventType: "fee_overdue", channel: "WHATSAPP", body: "Dear {parent_name}, installment #{installment_number} of Rs.{fee_amount} for {student_name} is overdue. Due was {fee_due_date}. Total pending: Rs.{fee_pending}. Please pay at the earliest. — {institute_name}" },
+    { name: "Enrollment Approved", slug: "enrollment_approved", eventType: "enrollment_approved", channel: "WHATSAPP", body: "Welcome to {institute_name}! Your enrollment has been approved. You can now login using your phone number. Batch: {student_batch}." },
+    { name: "Enrollment Approved (Parent)", slug: "enrollment_approved_parent", eventType: "enrollment_approved_parent", channel: "WHATSAPP", body: "Dear {parent_name}, {student_name} has been enrolled at {institute_name}. You can login with your phone number to track attendance, marks, and fees." },
+    { name: "Marks Published", slug: "marks_published", eventType: "marks_published", channel: "WHATSAPP", body: "Dear {parent_name}, {exam_name} results are out. {student_name} scored {marks}/{total_marks} ({percentage}%) in {subject_name}. — {institute_name}" },
+    { name: "Teacher Welcome", slug: "teacher_welcome", eventType: "teacher_welcome", channel: "EMAIL", subject: "Welcome to {institute_name}", body: "Welcome to {institute_name}! Your account has been created. Login at your institute's Canop portal to get started." },
+    { name: "Retest Scheduled", slug: "retest_scheduled", eventType: "retest_scheduled", channel: "WHATSAPP", body: "Dear {student_name}, your retest for {exam_name} is scheduled on {retest_date} at {retest_time}. Please be on time. — {institute_name}" },
+    { name: "Retest Scheduled (Parent)", slug: "retest_scheduled_parent", eventType: "retest_scheduled_parent", channel: "WHATSAPP", body: "Dear {parent_name}, {student_name}'s retest for {exam_name} is scheduled on {retest_date} at {retest_time}. — {institute_name}" },
+    { name: "Retest No-Show Alert", slug: "retest_no_show", eventType: "retest_no_show", channel: "IN_APP", body: "{student_name} did not appear for the retest of {exam_name} scheduled at {retest_time} on {retest_date}." },
+    { name: "Retest Results", slug: "retest_results", eventType: "retest_results", channel: "WHATSAPP", body: "Dear {parent_name}, {student_name} scored {marks}/{total_marks} ({percentage}%) in the {exam_name} retest. — {institute_name}" },
+    { name: "Assignment Published", slug: "assignment_published", eventType: "assignment_published", channel: "WHATSAPP", body: "New assignment for {student_name}: '{assignment_name}'. Due {deadline}, total {total_marks} marks. — {institute_name}" },
+    { name: "Assignment Graded", slug: "assignment_graded", eventType: "assignment_graded", channel: "WHATSAPP", body: "Dear {parent_name}, {student_name}'s assignment '{assignment_name}' has been graded. Score: {marks}/{total_marks}. — {institute_name}" },
+    { name: "Assignment Deadline Reminder", slug: "assignment_deadline_reminder", eventType: "assignment_deadline_reminder", channel: "WHATSAPP", body: "Reminder: {student_name}'s assignment '{assignment_name}' is due {deadline}. Please submit on time. — {institute_name}" },
   ];
 
   for (const t of defaultTemplates) {
     await prisma.notificationTemplate.upsert({
-      where: {
-        tenantId_slug_channel: { tenantId: demoTenant.id, slug: t.slug, channel: t.channel },
-      },
+      where: { tenantId_slug_channel: { tenantId: demoTenant.id, slug: t.slug, channel: t.channel } },
       update: { body: t.body, subject: t.subject ?? null },
-      create: {
-        tenantId: demoTenant.id,
-        name: t.name,
-        slug: t.slug,
-        eventType: t.eventType,
-        channel: t.channel,
-        subject: t.subject ?? null,
-        body: t.body,
-        isDefault: true,
-      },
+      create: { tenantId: demoTenant.id, name: t.name, slug: t.slug, eventType: t.eventType, channel: t.channel, subject: t.subject ?? null, body: t.body, isDefault: true },
     });
   }
   console.log(`[seed] ${defaultTemplates.length} default notification templates`);
 
-  // ── Consent records (all seeded users consented) ──
-  const consentUsers = [
-    demoAdmin.id,
-    demoTeacher.id,
-    demoParent.id,
-    demoStudent.id,
-    demoStudent2.id,
-  ];
+  // ── Consent records ──
+  const consentUsers = [demoAdmin.id, demoTeacher.id, demoParent.id, demoStudent.id, demoStudent2.id];
   const consentChannels: Array<"SMS" | "WHATSAPP" | "EMAIL"> = ["SMS", "WHATSAPP", "EMAIL"];
   for (const uid of consentUsers) {
     for (const ch of consentChannels) {
-      const existing = await prisma.consentRecord.findFirst({
-        where: { tenantId: demoTenant.id, userId: uid, channel: ch },
-      });
+      const existing = await prisma.consentRecord.findFirst({ where: { tenantId: demoTenant.id, userId: uid, channel: ch } });
       if (!existing) {
-        await prisma.consentRecord.create({
-          data: { tenantId: demoTenant.id, userId: uid, channel: ch, consented: true },
-        });
+        await prisma.consentRecord.create({ data: { tenantId: demoTenant.id, userId: uid, channel: ch, consented: true } });
       }
     }
   }
-  console.log(
-    `[seed] Consent records for ${consentUsers.length} users × ${consentChannels.length} channels`,
-  );
+  console.log(`[seed] Consent records for ${consentUsers.length} users × ${consentChannels.length} channels`);
 
-  // ── Sample broadcast campaign (already sent) ──
+  // ── Sample broadcast campaign ──
   const sampleCampaign = await prisma.broadcastCampaign.upsert({
     where: { id: "00000000-0000-0000-0000-000000000200" },
     update: {},
@@ -848,8 +719,7 @@ async function main() {
       id: "00000000-0000-0000-0000-000000000200",
       tenantId: demoTenant.id,
       title: "Holiday Notice",
-      message:
-        "Dear {parent_name}, tomorrow is a holiday at {institute_name}. No classes for {student_batch}. Stay safe!",
+      message: "Dear {parent_name}, tomorrow is a holiday at {institute_name}. No classes for {student_batch}. Stay safe!",
       channels: ["WHATSAPP", "SMS"],
       audienceType: "ALL_PARENTS",
       recipientCount: 3,
@@ -861,7 +731,6 @@ async function main() {
     },
   });
 
-  // Sample deliveries for the campaign
   const parents = await prisma.guardian.findMany({
     where: { tenantId: demoTenant.id, userId: { not: null } },
     include: { user: { select: { id: true, phone: true } } },
@@ -869,9 +738,7 @@ async function main() {
   });
   for (const g of parents) {
     if (!g.userId) continue;
-    const existing = await prisma.messageDelivery.findFirst({
-      where: { campaignId: sampleCampaign.id, recipientId: g.userId, channel: "WHATSAPP" },
-    });
+    const existing = await prisma.messageDelivery.findFirst({ where: { campaignId: sampleCampaign.id, recipientId: g.userId, channel: "WHATSAPP" } });
     if (!existing) {
       await prisma.messageDelivery.create({
         data: {
@@ -889,11 +756,9 @@ async function main() {
       });
     }
   }
-  console.log(
-    `[seed] Sample broadcast "${sampleCampaign.title}" with ${parents.length} deliveries`,
-  );
+  console.log(`[seed] Sample broadcast "${sampleCampaign.title}" with ${parents.length} deliveries`);
 
-  // ── Exams (Session 9A) ──
+  // ── Exams ──
   const bioSubj = subjects.find((s) => s.name === "Biology")!;
   const chemSubj = subjects.find((s) => s.name === "Chemistry")!;
 
@@ -978,7 +843,6 @@ async function main() {
     },
   });
 
-  // Mark entries for Sneha (the NEET-batch student)
   await prisma.markEntry.upsert({
     where: { examId_studentId: { examId: examBio1.id, studentId: snehaStudent.id } },
     update: {},
@@ -1023,9 +887,7 @@ async function main() {
   });
   console.log("[seed] 3 exams + 2 mark entries for Sneha");
 
-  // ── Retest (Session 9B) ──
-  // Aarav (11-A student) failed a chemistry unit test — create a PUBLISHED exam
-  // with a failed mark entry, then a COMPLETED retest to prove side-by-side display.
+  // ── Retest ──
   const examFailId = "00000000-0000-0000-0000-000000000304";
   const examFail = await prisma.exam.upsert({
     where: { id: examFailId },
@@ -1069,9 +931,7 @@ async function main() {
     },
   });
 
-  const retestScheduled = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 7),
-  );
+  const retestScheduled = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 7));
   await prisma.retest.upsert({
     where: { examId_studentId: { examId: examFail.id, studentId: aaravStudent.id } },
     update: {},
@@ -1098,9 +958,7 @@ async function main() {
   });
   console.log("[seed] 1 COMPLETED retest for Aarav (Chemistry 11-A)");
 
-  // ══════════════════════════════════════════════════════════════════
-  // INTELLIGENCE TRACKING (Session 10A)
-  // ══════════════════════════════════════════════════════════════════
+  // ── Intelligence Tracking ──
   const recentEntities: Array<{ entityType: string; entityId: string }> = [
     { entityType: "student", entityId: aaravStudent.id },
     { entityType: "batch", entityId: batch11A.id },
@@ -1110,39 +968,22 @@ async function main() {
   ];
   for (const e of recentEntities) {
     await prisma.recentItem.upsert({
-      where: {
-        userId_entityType_entityId: {
-          userId: demoAdmin.id,
-          entityType: e.entityType,
-          entityId: e.entityId,
-        },
-      },
+      where: { userId_entityType_entityId: { userId: demoAdmin.id, entityType: e.entityType, entityId: e.entityId } },
       update: { lastViewed: new Date() },
-      create: {
-        tenantId: demoTenant.id,
-        userId: demoAdmin.id,
-        entityType: e.entityType,
-        entityId: e.entityId,
-      },
+      create: { tenantId: demoTenant.id, userId: demoAdmin.id, entityType: e.entityType, entityId: e.entityId },
     });
   }
   console.log(`[seed] ${recentEntities.length} RecentItem rows for demo admin`);
 
-  // Engagement snapshot for Aarav (today)
-  const snapshotDate = new Date();
-  snapshotDate.setUTCHours(0, 0, 0, 0);
+  const engSnapDate = new Date();
+  engSnapDate.setUTCHours(0, 0, 0, 0);
   await prisma.engagementSnapshot.upsert({
-    where: {
-      studentId_snapshotDate: {
-        studentId: aaravStudent.id,
-        snapshotDate,
-      },
-    },
+    where: { studentId_snapshotDate: { studentId: aaravStudent.id, snapshotDate: engSnapDate } },
     update: {},
     create: {
       tenantId: demoTenant.id,
       studentId: aaravStudent.id,
-      snapshotDate,
+      snapshotDate: engSnapDate,
       score: 64.5,
       attendanceScore: 75,
       marksScore: 60,
@@ -1154,177 +995,50 @@ async function main() {
   });
   console.log("[seed] 1 EngagementSnapshot for Aarav");
 
-  // LLM config (Session 11) — disabled by default
-  await prisma.lLMConfig.upsert({
-    where: { tenantId: demoTenant.id },
-    update: {},
-    create: {
-      tenantId: demoTenant.id,
-      mode: "DISABLED",
-    },
-  });
-  await prisma.lLMConfig.upsert({
-    where: { tenantId: testTenant.id },
-    update: {},
-    create: {
-      tenantId: testTenant.id,
-      mode: "DISABLED",
-    },
-  });
+  // ── LLM config ──
+  await prisma.lLMConfig.upsert({ where: { tenantId: demoTenant.id }, update: {}, create: { tenantId: demoTenant.id, mode: "DISABLED" } });
+  await prisma.lLMConfig.upsert({ where: { tenantId: testTenant.id }, update: {}, create: { tenantId: testTenant.id, mode: "DISABLED" } });
   console.log("[seed] LLMConfig (DISABLED) for demo + test tenants");
 
-  // ══════════════════════════════════════════════════════════════════
-  // CONTENT MODULES (Session 12) — demo materials, videos, assignments
-  // ══════════════════════════════════════════════════════════════════
-
-  // ── Study Materials (3 — one per subject in batch 11-A) ──
+  // ── Content Modules ──
   const bioMaterial = await prisma.studyMaterial.upsert({
     where: { id: "00000000-0000-0000-0000-000000000300" },
     update: {},
-    create: {
-      id: "00000000-0000-0000-0000-000000000300",
-      tenantId: demoTenant.id,
-      title: "Biology — Cell Structure Notes",
-      description: "Chapter 3 notes covering cell membrane, cytoplasm, and organelles.",
-      materialType: "PDF",
-      fileKey: "demo/static/bio-cell-structure.pdf",
-      fileName: "bio-cell-structure.pdf",
-      fileSize: 245_600,
-      mimeType: "application/pdf",
-      subjectId: bio.id,
-      chapterNumber: 3,
-      chapterTitle: "Cell Structure & Function",
-      accessType: "BATCH",
-      uploadedById: demoTeacher.id,
-      viewCount: 12,
-      downloadCount: 7,
-      publishedAt: new Date(),
-      isPublished: true,
-    },
+    create: { id: "00000000-0000-0000-0000-000000000300", tenantId: demoTenant.id, title: "Biology — Cell Structure Notes", description: "Chapter 3 notes covering cell membrane, cytoplasm, and organelles.", materialType: "PDF", fileKey: "demo/static/bio-cell-structure.pdf", fileName: "bio-cell-structure.pdf", fileSize: 245_600, mimeType: "application/pdf", subjectId: bio.id, chapterNumber: 3, chapterTitle: "Cell Structure & Function", accessType: "BATCH", uploadedById: demoTeacher.id, viewCount: 12, downloadCount: 7, publishedAt: new Date(), isPublished: true },
   });
-  await prisma.materialBatchAccess.upsert({
-    where: { materialId_batchId: { materialId: bioMaterial.id, batchId: batch11A.id } },
-    update: {},
-    create: { tenantId: demoTenant.id, materialId: bioMaterial.id, batchId: batch11A.id },
-  });
+  await prisma.materialBatchAccess.upsert({ where: { materialId_batchId: { materialId: bioMaterial.id, batchId: batch11A.id } }, update: {}, create: { tenantId: demoTenant.id, materialId: bioMaterial.id, batchId: batch11A.id } });
 
   const chemMaterial = await prisma.studyMaterial.upsert({
     where: { id: "00000000-0000-0000-0000-000000000301" },
     update: {},
-    create: {
-      id: "00000000-0000-0000-0000-000000000301",
-      tenantId: demoTenant.id,
-      title: "Chemistry — Periodic Table Reference",
-      materialType: "PDF",
-      fileKey: "demo/static/chem-periodic-table.pdf",
-      fileName: "chem-periodic-table.pdf",
-      fileSize: 189_200,
-      mimeType: "application/pdf",
-      subjectId: chem.id,
-      chapterNumber: 3,
-      chapterTitle: "Periodic Classification",
-      accessType: "BATCH",
-      uploadedById: demoTeacher.id,
-      viewCount: 8,
-      downloadCount: 4,
-      publishedAt: new Date(),
-      isPublished: true,
-    },
+    create: { id: "00000000-0000-0000-0000-000000000301", tenantId: demoTenant.id, title: "Chemistry — Periodic Table Reference", materialType: "PDF", fileKey: "demo/static/chem-periodic-table.pdf", fileName: "chem-periodic-table.pdf", fileSize: 189_200, mimeType: "application/pdf", subjectId: chem.id, chapterNumber: 3, chapterTitle: "Periodic Classification", accessType: "BATCH", uploadedById: demoTeacher.id, viewCount: 8, downloadCount: 4, publishedAt: new Date(), isPublished: true },
   });
-  await prisma.materialBatchAccess.upsert({
-    where: { materialId_batchId: { materialId: chemMaterial.id, batchId: batch11A.id } },
-    update: {},
-    create: { tenantId: demoTenant.id, materialId: chemMaterial.id, batchId: batch11A.id },
-  });
+  await prisma.materialBatchAccess.upsert({ where: { materialId_batchId: { materialId: chemMaterial.id, batchId: batch11A.id } }, update: {}, create: { tenantId: demoTenant.id, materialId: chemMaterial.id, batchId: batch11A.id } });
 
   await prisma.studyMaterial.upsert({
     where: { id: "00000000-0000-0000-0000-000000000302" },
     update: {},
-    create: {
-      id: "00000000-0000-0000-0000-000000000302",
-      tenantId: demoTenant.id,
-      title: "Exam Calendar — Academic Year 2025-26",
-      description: "Term schedule, holiday list, and exam windows.",
-      materialType: "PDF",
-      fileKey: "demo/static/exam-calendar.pdf",
-      fileName: "exam-calendar.pdf",
-      fileSize: 82_100,
-      mimeType: "application/pdf",
-      accessType: "INSTITUTE",
-      uploadedById: demoAdmin.id,
-      publishedAt: new Date(),
-      isPublished: true,
-    },
+    create: { id: "00000000-0000-0000-0000-000000000302", tenantId: demoTenant.id, title: "Exam Calendar — Academic Year 2025-26", description: "Term schedule, holiday list, and exam windows.", materialType: "PDF", fileKey: "demo/static/exam-calendar.pdf", fileName: "exam-calendar.pdf", fileSize: 82_100, mimeType: "application/pdf", accessType: "INSTITUTE", uploadedById: demoAdmin.id, publishedAt: new Date(), isPublished: true },
   });
-  console.log(`[seed] 3 study materials (bio, chem, institute-wide)`);
+  console.log(`[seed] 3 study materials`);
 
-  // ── Video Lectures (2 stubs, status READY) ──
+  // ── Video Lectures ──
   const bioVideo = await prisma.videoLecture.upsert({
     where: { id: "00000000-0000-0000-0000-000000000400" },
     update: {},
-    create: {
-      id: "00000000-0000-0000-0000-000000000400",
-      tenantId: demoTenant.id,
-      title: "Biology — Cell Division (Mitosis Overview)",
-      description: "Intro to phases of mitosis with diagrams.",
-      bunnyVideoId: "stub-seed-bio-mitosis",
-      bunnyLibraryId: "stub-library",
-      thumbnailUrl:
-        "https://via.placeholder.com/1280x720.png?text=Cell+Division+Stub",
-      playbackUrl: "https://iframe.mediadelivery.net/embed/stub/stub-seed-bio-mitosis",
-      durationSec: 720,
-      status: "READY",
-      subjectId: bio.id,
-      chapterNumber: 4,
-      chapterTitle: "Cell Division",
-      accessType: "BATCH",
-      uploadedById: demoTeacher.id,
-      viewCount: 6,
-      totalWatchTimeSec: 3600,
-      publishedAt: new Date(),
-      isPublished: true,
-    },
+    create: { id: "00000000-0000-0000-0000-000000000400", tenantId: demoTenant.id, title: "Biology — Cell Division (Mitosis Overview)", description: "Intro to phases of mitosis with diagrams.", bunnyVideoId: "stub-seed-bio-mitosis", bunnyLibraryId: "stub-library", thumbnailUrl: "https://via.placeholder.com/1280x720.png?text=Cell+Division+Stub", playbackUrl: "https://iframe.mediadelivery.net/embed/stub/stub-seed-bio-mitosis", durationSec: 720, status: "READY", subjectId: bio.id, chapterNumber: 4, chapterTitle: "Cell Division", accessType: "BATCH", uploadedById: demoTeacher.id, viewCount: 6, totalWatchTimeSec: 3600, publishedAt: new Date(), isPublished: true },
   });
-  await prisma.videoBatchAccess.upsert({
-    where: { videoId_batchId: { videoId: bioVideo.id, batchId: batch11A.id } },
-    update: {},
-    create: { tenantId: demoTenant.id, videoId: bioVideo.id, batchId: batch11A.id },
-  });
+  await prisma.videoBatchAccess.upsert({ where: { videoId_batchId: { videoId: bioVideo.id, batchId: batch11A.id } }, update: {}, create: { tenantId: demoTenant.id, videoId: bioVideo.id, batchId: batch11A.id } });
 
   const chemVideo = await prisma.videoLecture.upsert({
     where: { id: "00000000-0000-0000-0000-000000000401" },
     update: {},
-    create: {
-      id: "00000000-0000-0000-0000-000000000401",
-      tenantId: demoTenant.id,
-      title: "Chemistry — Ionic vs Covalent Bonding",
-      description: "Worked examples contrasting ionic and covalent bonds.",
-      bunnyVideoId: "stub-seed-chem-bonding",
-      bunnyLibraryId: "stub-library",
-      thumbnailUrl:
-        "https://via.placeholder.com/1280x720.png?text=Bonding+Stub",
-      playbackUrl: "https://iframe.mediadelivery.net/embed/stub/stub-seed-chem-bonding",
-      durationSec: 540,
-      status: "READY",
-      subjectId: chem.id,
-      chapterNumber: 4,
-      chapterTitle: "Chemical Bonding",
-      accessType: "BATCH",
-      uploadedById: demoTeacher.id,
-      viewCount: 3,
-      totalWatchTimeSec: 1200,
-      publishedAt: new Date(),
-      isPublished: true,
-    },
+    create: { id: "00000000-0000-0000-0000-000000000401", tenantId: demoTenant.id, title: "Chemistry — Ionic vs Covalent Bonding", description: "Worked examples contrasting ionic and covalent bonds.", bunnyVideoId: "stub-seed-chem-bonding", bunnyLibraryId: "stub-library", thumbnailUrl: "https://via.placeholder.com/1280x720.png?text=Bonding+Stub", playbackUrl: "https://iframe.mediadelivery.net/embed/stub/stub-seed-chem-bonding", durationSec: 540, status: "READY", subjectId: chem.id, chapterNumber: 4, chapterTitle: "Chemical Bonding", accessType: "BATCH", uploadedById: demoTeacher.id, viewCount: 3, totalWatchTimeSec: 1200, publishedAt: new Date(), isPublished: true },
   });
-  await prisma.videoBatchAccess.upsert({
-    where: { videoId_batchId: { videoId: chemVideo.id, batchId: batch11A.id } },
-    update: {},
-    create: { tenantId: demoTenant.id, videoId: chemVideo.id, batchId: batch11A.id },
-  });
-  console.log(`[seed] 2 video lectures (status READY, stub URLs)`);
+  await prisma.videoBatchAccess.upsert({ where: { videoId_batchId: { videoId: chemVideo.id, batchId: batch11A.id } }, update: {}, create: { tenantId: demoTenant.id, videoId: chemVideo.id, batchId: batch11A.id } });
+  console.log(`[seed] 2 video lectures`);
 
-  // ── Assignments (2 — one published, one with submission) ──
+  // ── Assignments ──
   const futureDeadline = new Date();
   futureDeadline.setDate(futureDeadline.getDate() + 7);
   const pastDeadline = new Date();
@@ -1333,115 +1047,42 @@ async function main() {
   await prisma.assignment.upsert({
     where: { id: "00000000-0000-0000-0000-000000000500" },
     update: {},
-    create: {
-      id: "00000000-0000-0000-0000-000000000500",
-      tenantId: demoTenant.id,
-      title: "Biology Homework — Organelles Diagram",
-      description: "Draw and label the major organelles in a eukaryotic cell.",
-      instructions: "Use the notes from Chapter 3. Submit as PDF or image.",
-      batchId: batch11A.id,
-      subjectId: bio.id,
-      deadline: futureDeadline,
-      allowLateSubmission: true,
-      totalMarks: 25,
-      latePenaltyPercent: 10,
-      status: "PUBLISHED",
-      publishedAt: new Date(),
-      createdById: demoTeacher.id,
-    },
+    create: { id: "00000000-0000-0000-0000-000000000500", tenantId: demoTenant.id, title: "Biology Homework — Organelles Diagram", description: "Draw and label the major organelles in a eukaryotic cell.", instructions: "Use the notes from Chapter 3. Submit as PDF or image.", batchId: batch11A.id, subjectId: bio.id, deadline: futureDeadline, allowLateSubmission: true, totalMarks: 25, latePenaltyPercent: 10, status: "PUBLISHED", publishedAt: new Date(), createdById: demoTeacher.id },
   });
 
   const gradedAssignment = await prisma.assignment.upsert({
     where: { id: "00000000-0000-0000-0000-000000000501" },
     update: {},
-    create: {
-      id: "00000000-0000-0000-0000-000000000501",
-      tenantId: demoTenant.id,
-      title: "Chemistry Problem Set — Balancing Equations",
-      description: "Complete the 10 balancing equations problems attached.",
-      batchId: batch11A.id,
-      subjectId: chem.id,
-      deadline: pastDeadline,
-      allowLateSubmission: false,
-      totalMarks: 30,
-      status: "PUBLISHED",
-      publishedAt: new Date(pastDeadline.getTime() - 7 * 86400000),
-      createdById: demoTeacher.id,
-    },
+    create: { id: "00000000-0000-0000-0000-000000000501", tenantId: demoTenant.id, title: "Chemistry Problem Set — Balancing Equations", description: "Complete the 10 balancing equations problems attached.", batchId: batch11A.id, subjectId: chem.id, deadline: pastDeadline, allowLateSubmission: false, totalMarks: 30, status: "PUBLISHED", publishedAt: new Date(pastDeadline.getTime() - 7 * 86400000), createdById: demoTeacher.id },
   });
 
-  // Sample submission: Aarav submitted + was graded on the chem assignment
   const chemSubmission = await prisma.assignmentSubmission.upsert({
-    where: {
-      assignmentId_studentId: {
-        assignmentId: gradedAssignment.id,
-        studentId: aaravStudent.id,
-      },
-    },
+    where: { assignmentId_studentId: { assignmentId: gradedAssignment.id, studentId: aaravStudent.id } },
     update: {},
-    create: {
-      tenantId: demoTenant.id,
-      assignmentId: gradedAssignment.id,
-      studentId: aaravStudent.id,
-      openedAt: new Date(pastDeadline.getTime() - 5 * 86400000),
-      firstUploadAt: new Date(pastDeadline.getTime() - 1 * 86400000),
-      submittedAt: new Date(pastDeadline.getTime() - 1 * 86400000),
-      status: "GRADED",
-      isLate: false,
-      marksAwarded: 24,
-      feedback: "Good attempt — watch the coefficients in Q4 and Q7.",
-      gradedById: demoTeacher.id,
-      gradedAt: new Date(pastDeadline.getTime() + 1 * 86400000),
-    },
+    create: { tenantId: demoTenant.id, assignmentId: gradedAssignment.id, studentId: aaravStudent.id, openedAt: new Date(pastDeadline.getTime() - 5 * 86400000), firstUploadAt: new Date(pastDeadline.getTime() - 1 * 86400000), submittedAt: new Date(pastDeadline.getTime() - 1 * 86400000), status: "GRADED", isLate: false, marksAwarded: 24, feedback: "Good attempt — watch the coefficients in Q4 and Q7.", gradedById: demoTeacher.id, gradedAt: new Date(pastDeadline.getTime() + 1 * 86400000) },
   });
 
   await prisma.submissionFile.upsert({
     where: { id: "00000000-0000-0000-0000-000000000502" },
     update: {},
-    create: {
-      id: "00000000-0000-0000-0000-000000000502",
-      tenantId: demoTenant.id,
-      submissionId: chemSubmission.id,
-      fileKey: "demo/static/aarav-chem-problem-set.pdf",
-      fileName: "aarav-chem-problem-set.pdf",
-      fileSize: 156_400,
-      mimeType: "application/pdf",
-    },
+    create: { id: "00000000-0000-0000-0000-000000000502", tenantId: demoTenant.id, submissionId: chemSubmission.id, fileKey: "demo/static/aarav-chem-problem-set.pdf", fileName: "aarav-chem-problem-set.pdf", fileSize: 156_400, mimeType: "application/pdf" },
   });
   console.log(`[seed] 2 assignments (active bio, graded chem with submission)`);
 
-  // Sample video watch session for Aarav on bio video (80% complete)
+  // ── Watch session + access log ──
   await prisma.videoWatchSession.upsert({
     where: { videoId_studentId: { videoId: bioVideo.id, studentId: aaravStudent.id } },
     update: {},
-    create: {
-      tenantId: demoTenant.id,
-      videoId: bioVideo.id,
-      studentId: aaravStudent.id,
-      userId: demoStudent.id,
-      furthestPositionSec: 600,
-      totalWatchedSec: 576,
-      completionPercent: 80,
-    },
+    create: { tenantId: demoTenant.id, videoId: bioVideo.id, studentId: aaravStudent.id, userId: demoStudent.id, furthestPositionSec: 600, totalWatchedSec: 576, completionPercent: 80 },
   });
-  console.log(`[seed] 1 video watch session for Aarav (80% on bio video)`);
+  console.log(`[seed] 1 video watch session for Aarav (80%)`);
 
-  // Sample material access log for Aarav
   await prisma.materialAccessLog.create({
-    data: {
-      tenantId: demoTenant.id,
-      materialId: bioMaterial.id,
-      studentId: aaravStudent.id,
-      userId: demoStudent.id,
-      action: "DOWNLOADED",
-    },
+    data: { tenantId: demoTenant.id, materialId: bioMaterial.id, studentId: aaravStudent.id, userId: demoStudent.id, action: "DOWNLOADED" },
   });
 
-  // ════════════════════════════════════════════════════════
-  // SESSION 14 — Analytics snapshots + default dashboard layout
-  // ════════════════════════════════════════════════════════
+  // ── Analytics Snapshots (30 days) ──
   console.log("[seed] Generating 30 days of analytics snapshots...");
-
   const snapshotAnchor = new Date();
   snapshotAnchor.setHours(0, 0, 0, 0);
 
@@ -1450,22 +1091,19 @@ async function main() {
   }
 
   for (let daysAgo = 30; daysAgo >= 0; daysAgo--) {
-    const snapshotDate = new Date(snapshotAnchor);
-    snapshotDate.setDate(snapshotDate.getDate() - daysAgo);
-
+    const snapDate = new Date(snapshotAnchor);
+    snapDate.setDate(snapDate.getDate() - daysAgo);
     const baseAttendance = 82;
     const baseEngagement = 68;
     const basePassRate = 74;
     const trendFactor = (30 - daysAgo) / 30;
 
     await prisma.analyticsSnapshot.upsert({
-      where: {
-        tenantId_snapshotDate: { tenantId: demoTenant.id, snapshotDate },
-      },
+      where: { tenantId_snapshotDate: { tenantId: demoTenant.id, snapshotDate: snapDate } },
       update: {},
       create: {
         tenantId: demoTenant.id,
-        snapshotDate,
+        snapshotDate: snapDate,
         totalSessions: Math.floor(3 + Math.random() * 6),
         avgAttendancePercent: rand(baseAttendance - 5, baseAttendance + 7 * trendFactor),
         absentCount: Math.floor(rand(5, 25)),
@@ -1496,9 +1134,9 @@ async function main() {
       },
     });
   }
-  console.log(`[seed] 31 analytics snapshots created (today + last 30 days)`);
+  console.log(`[seed] 31 analytics snapshots created`);
 
-  // Default dashboard layout for demo admin
+  // ── Dashboard layout ──
   const defaultLayout = [
     { i: "w-student-count", x: 0, y: 0, w: 3, h: 2 },
     { i: "w-attendance-today", x: 3, y: 0, w: 3, h: 2 },
@@ -1527,15 +1165,15 @@ async function main() {
   await prisma.dashboardLayout.upsert({
     where: { userId: demoAdmin.id },
     update: {},
-    create: {
-      tenantId: demoTenant.id,
-      userId: demoAdmin.id,
-      layout: defaultLayout,
-      widgets: defaultWidgets,
-      isDefault: true,
-    },
+    create: { tenantId: demoTenant.id, userId: demoAdmin.id, layout: defaultLayout, widgets: defaultWidgets, isDefault: true },
   });
   console.log(`[seed] Default dashboard layout for admin`);
+
+  // ── RLS enablement is gated by NODE_ENV inside enableRLS (no-op in dev) ──
+  // Skipped entirely here so `pnpm db:seed` doesn't re-arm policies against
+  // local roles. Production deploys should call enableRLS from a migration
+  // or post-deploy step, not from seed.
+  // await enableRLS(prisma);
 
   console.log("[seed] Done.");
 }

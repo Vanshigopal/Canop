@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { CheckCircle, X } from "lucide-react";
 import { useState, useMemo } from "react";
 import { platformApi } from "@/stores/platform-auth";
 
@@ -112,7 +112,9 @@ export function CreateTenantModal({
         {success ? (
           <div className="p-6 space-y-4 text-sm">
             <div className="bg-emerald-50 border border-emerald-200 rounded-md p-4 text-emerald-900">
-              <div className="font-medium mb-2">✓ Institute created successfully</div>
+              <div className="font-medium mb-2 inline-flex items-center gap-2">
+                <CheckCircle size={16} /> Institute created successfully
+              </div>
               <div className="text-xs">
                 Login details (show these to the owner — they won't be saved anywhere)
               </div>

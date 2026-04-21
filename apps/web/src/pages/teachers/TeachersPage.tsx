@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Button, Input, Badge } from "@/components/primitives";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 
 interface Teacher {
   id: string;
@@ -38,6 +38,33 @@ export function TeachersPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", subjectIds: [] as string[], permissions: {} as Record<string, boolean> });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
+  const [removing, setRemoving] = useState<Teacher | null>(null);
+  const [removeBusy, setRemoveBusy] = useState(false);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  async function confirmRemove() {
+    if (!removing) return;
+    setRemoveBusy(true);
+    try {
+      await api.delete(`/api/v1/teachers/${removing.id}`);
+      setToast(`${removing.name} removed`);
+      setRemoving(null);
+      load();
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { title?: string } } })?.response?.data?.title ||
+        "Failed to remove teacher";
+      setToast(msg);
+    } finally {
+      setRemoveBusy(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -83,6 +110,12 @@ export function TeachersPage() {
         <Button onClick={() => setShowModal(true)} leftIcon={<Plus size={16} />}>Add Teacher</Button>
       </div>
 
+      {toast && (
+        <div className="mb-3 rounded-lg bg-success/10 border border-success/20 px-4 py-2 text-xs text-success">
+          {toast}
+        </div>
+      )}
+
       {loading ? (
         <div className="text-text-dim text-sm">Loading...</div>
       ) : (
@@ -95,6 +128,7 @@ export function TeachersPage() {
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Subjects</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium w-10"></th>
               </tr>
             </thead>
             <tbody>
@@ -115,13 +149,51 @@ export function TeachersPage() {
                       {t.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </td>
+                  <td className="px-2 py-3">
+                    <button
+                      type="button"
+                      title="Remove teacher"
+                      onClick={() => setRemoving(t)}
+                      className="p-1.5 rounded text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#FEF2F2] transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {teachers.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-text-dim">No teachers yet</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-text-dim">No teachers yet</td></tr>
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {removing && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}
+        >
+          <div className="glass-panel w-full max-w-md mx-4 p-6" style={{ animation: "scaleIn 0.15s ease-out" }}>
+            <h2 className="font-display text-lg mb-2">Remove Teacher</h2>
+            <p className="text-sm text-text-primary mb-5">
+              Are you sure you want to remove <strong>{removing.name}</strong>? This will revoke
+              their access to your institute. Historical records will be preserved.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setRemoving(null)} disabled={removeBusy}>
+                Cancel
+              </Button>
+              <button
+                type="button"
+                onClick={confirmRemove}
+                disabled={removeBusy}
+                className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-md bg-[#DC2626] text-white hover:bg-[#B91C1C] disabled:opacity-50 transition-colors"
+              >
+                {removeBusy ? "Removing…" : "Remove"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

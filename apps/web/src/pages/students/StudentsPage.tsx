@@ -1,9 +1,9 @@
-import { Badge, Button, Input } from "@/components/primitives";
+import { Badge, Button, CustomSelect, Input } from "@/components/primitives";
 import { api } from "@/lib/api";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { ChevronDown, Search, X } from "lucide-react";
+import { ArrowRight, ChevronDown, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface Student {
   id: string;
@@ -23,6 +23,7 @@ interface BatchOption {
 type Action = "add" | "remove" | "transfer" | null;
 
 export function StudentsPage() {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [batches, setBatches] = useState<BatchOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,9 +169,9 @@ export function StudentsPage() {
         </div>
         <Link
           to="/analytics/engagement"
-          className="text-xs font-medium text-indigo hover:underline"
+          className="text-xs font-medium text-indigo hover:underline inline-flex items-center gap-1"
         >
-          View Engagement Analytics →
+          View Engagement Analytics <ArrowRight size={12} />
         </Link>
       </div>
 
@@ -196,18 +197,16 @@ export function StudentsPage() {
             <Search size={16} className="text-text-muted" />
           </button>
         </form>
-        <select
-          value={filterBatchId}
-          onChange={(e) => setFilterBatchId(e.target.value)}
-          className="rounded-md border border-border-soft bg-white/92 px-3.5 py-2.5 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
-        >
-          <option value="">All batches</option>
-          {batches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
+        <div style={{ minWidth: 180 }}>
+          <CustomSelect
+            value={filterBatchId}
+            onChange={setFilterBatchId}
+            options={[
+              { value: "", label: "All batches" },
+              ...batches.map((b) => ({ value: b.id, label: b.name })),
+            ]}
+          />
+        </div>
       </div>
 
       {selected.size > 0 && (
@@ -267,11 +266,12 @@ export function StudentsPage() {
                 return (
                   <tr
                     key={s.id}
-                    className={`border-b border-border-soft last:border-0 hover:bg-white/40 transition-colors ${
-                      isChecked ? "bg-indigo/5" : ""
+                    onClick={() => navigate(`/students/${s.id}`)}
+                    className={`border-b border-border-soft last:border-0 cursor-pointer transition-colors ${
+                      isChecked ? "bg-indigo/5" : "hover:bg-[#FAF7F2]"
                     }`}
                   >
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isChecked}
@@ -282,9 +282,7 @@ export function StudentsPage() {
                       />
                     </td>
                     <td className="px-4 py-3 font-medium text-text-primary">
-                      <Link to={`/students/${s.id}`} className="hover:text-indigo transition-colors">
-                        {s.user.name}
-                      </Link>
+                      {s.user.name}
                     </td>
                     <td className="px-4 py-3 text-text-muted font-mono text-xs">{s.user.phone}</td>
                     <td className="px-4 py-3 text-text-muted">{s.class?.name || "—"}</td>
@@ -356,7 +354,10 @@ function ActionBar({
   const [pickedSource, setPickedSource] = useState("");
 
   return (
-    <div className="glass-panel p-3 mb-3 flex items-center gap-3 flex-wrap">
+    <div
+      className="glass-panel p-3 mb-3 flex items-center gap-3 flex-wrap"
+      style={{ overflow: "visible", position: "relative", zIndex: 40 }}
+    >
       <Badge tone="info">{count} selected</Badge>
 
       <div className="relative">
@@ -452,8 +453,8 @@ function Dropdown({
 }) {
   return (
     <div
-      className="absolute left-0 top-full mt-1 w-56 glass-panel p-1 z-10 shadow-lg"
-      style={{ animation: "scaleIn 0.12s ease-out" }}
+      className="absolute left-0 top-full mt-1 w-56 glass-panel p-1 shadow-lg"
+      style={{ animation: "scaleIn 0.12s ease-out", zIndex: 50 }}
     >
       {label && (
         <div className="px-2 py-1 text-2xs uppercase tracking-wider text-text-dim">{label}</div>

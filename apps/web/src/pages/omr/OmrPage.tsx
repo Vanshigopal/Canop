@@ -1,14 +1,7 @@
-import { Badge, Button } from "@/components/primitives";
+import { Badge, Button, CustomSelect } from "@/components/primitives";
 import { api } from "@/lib/api";
-import {
-  AlertTriangle,
-  Check,
-  FileText,
-  ScanLine,
-  Upload,
-  X,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Pencil, ScanLine, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface Exam {
   id: string;
@@ -18,274 +11,291 @@ interface Exam {
   totalQuestions: number | null;
   totalMarks: number | string;
   marksPerCorrect: number | string | null;
-  marksPerWrong: number | string | null;
-  marksPerUnattempted: number | string | null;
   batch: { id: string; name: string } | null;
   subject: { id: string; name: string } | null;
 }
 
-interface Student {
+interface AnswerKeyRow {
   id: string;
-  user: { name: string };
-  rollNumber: string | null;
-}
-
-interface ScanResponse {
-  total_questions: number;
-  correct: number;
-  incorrect: number;
-  unattempted: number;
-  score: number;
-  positive_marks: number;
-  negative_marks: number;
-  roll_number: string | null;
-  responses: Array<{
-    question_number: number;
-    selected_option: number | null;
-    confidence: number;
-    filled_ratio: number;
-  }>;
-  flagged_questions: number[];
-  needs_review: boolean;
+  examId: string;
+  answers: Record<string, number>;
+  createdAt: string;
+  updatedAt: string;
+  exam: {
+    id: string;
+    name: string;
+    totalQuestions: number | null;
+    batch: { id: string; name: string } | null;
+  };
 }
 
 const OPTIONS = ["A", "B", "C", "D"];
 
 export function OmrPage() {
   const [exams, setExams] = useState<Exam[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [examId, setExamId] = useState<string>("");
-  const [studentId, setStudentId] = useState<string>("");
+  const [savedKeys, setSavedKeys] = useState<AnswerKeyRow[]>([]);
+  const [examId, setExamId] = useState("");
   const [answerKey, setAnswerKey] = useState<Record<number, number>>({});
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<ScanResponse | null>(null);
-  const [error, setError] = useState("");
+  const [existingKeyId, setExistingKeyId] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState("");
 
-  const selectedExam = useMemo(
-    () => exams.find((e) => e.id === examId) ?? null,
-    [exams, examId],
-  );
+  const selectedExam = useMemo(() => exams.find((e) => e.id === examId) ?? null, [exams, examId]);
+
+  const loadSavedKeys = useCallback(() => {
+    api
+      .get("/api/v1/answer-keys")
+      .then((r) => setSavedKeys(r.data.data as AnswerKeyRow[]))
+      .catch(() => setSavedKeys([]));
+  }, []);
 
   useEffect(() => {
     api.get("/api/v1/exams").then((r) => {
       const mcqExams = (r.data.data as Exam[]).filter(
-        (e) =>
-          (e.type === "MCQ" || e.type === "THEORY_MCQ") &&
-          e.totalQuestions &&
-          e.marksPerCorrect !== null,
+        (e) => (e.type === "MCQ" || e.type === "THEORY_MCQ") && e.totalQuestions,
       );
       setExams(mcqExams);
     });
-  }, []);
+    loadSavedKeys();
+  }, [loadSavedKeys]);
 
   useEffect(() => {
-    if (!selectedExam?.batch?.id) {
-      setStudents([]);
+    if (!examId) {
+      setAnswerKey({});
+      setExistingKeyId(null);
+      setEditMode(true);
       return;
     }
     api
-      .get(`/api/v1/students?batchId=${selectedExam.batch.id}&pageSize=100`)
-      .then((r) => setStudents(r.data.data));
-    setResult(null);
-    setAnswerKey({});
-  }, [selectedExam?.batch?.id]);
+      .get(`/api/v1/answer-keys/${examId}`)
+      .then((r) => {
+        const row = r.data.data as AnswerKeyRow;
+        const parsed: Record<number, number> = {};
+        for (const [k, v] of Object.entries(row.answers)) parsed[Number(k)] = Number(v);
+        setAnswerKey(parsed);
+        setExistingKeyId(row.id);
+        setEditMode(false);
+      })
+      .catch(() => {
+        setAnswerKey({});
+        setExistingKeyId(null);
+        setEditMode(true);
+      });
+  }, [examId]);
 
-  function handleFile(f: File | null) {
-    setFile(f);
-    setResult(null);
-    setError("");
-    if (f && f.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = () => setPreview(reader.result as string);
-      reader.readAsDataURL(f);
-    } else {
-      setPreview(null);
-    }
-  }
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   function setAnswer(q: number, option: number) {
+    if (!editMode) return;
     setAnswerKey((prev) => ({ ...prev, [q]: option }));
   }
 
-  const answerKeyComplete =
-    selectedExam?.totalQuestions &&
-    Object.keys(answerKey).length === selectedExam.totalQuestions;
-
-  async function scan() {
-    if (!file || !selectedExam || !studentId) return;
-    setScanning(true);
-    setError("");
+  async function save() {
+    if (!selectedExam) return;
+    setSaving(true);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("examId", selectedExam.id);
-      form.append("studentId", studentId);
-      form.append("answerKey", JSON.stringify(answerKey));
-
-      const r = await api.post("/api/v1/omr/scan", form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setResult(r.data.data);
-    } catch (err: unknown) {
-      const anyErr = err as { response?: { data?: { error?: { message?: string } } } };
-      setError(
-        anyErr?.response?.data?.error?.message ??
-          "Scan failed — check that the ML service is running.",
-      );
+      if (existingKeyId) {
+        await api.put(`/api/v1/answer-keys/${selectedExam.id}`, { answers: answerKey });
+        setToast("Answer key updated");
+      } else {
+        const r = await api.post("/api/v1/answer-keys", {
+          examId: selectedExam.id,
+          answers: answerKey,
+        });
+        setExistingKeyId(r.data.data.id);
+        setToast("Answer key saved");
+      }
+      setEditMode(false);
+      loadSavedKeys();
+    } catch (err) {
+      const msg =
+        (err as { response?: { data?: { title?: string } } }).response?.data?.title ??
+        "Save failed";
+      setToast(msg);
     } finally {
-      setScanning(false);
+      setSaving(false);
     }
   }
 
-  async function confirmFlagged() {
-    if (!result || !selectedExam || !studentId) return;
-    setScanning(true);
+  async function handleDelete(targetExamId: string) {
+    if (!confirm("Delete this answer key? This cannot be undone.")) return;
     try {
-      await api.post("/api/v1/omr/confirm", {
-        examId: selectedExam.id,
-        studentId,
-        marksObtained: result.score,
-        correct: result.correct,
-        incorrect: result.incorrect,
-        unattempted: result.unattempted,
-      });
-      setResult({ ...result, needs_review: false });
-    } finally {
-      setScanning(false);
+      await api.delete(`/api/v1/answer-keys/${targetExamId}`);
+      setToast("Answer key deleted");
+      if (targetExamId === examId) {
+        setAnswerKey({});
+        setExistingKeyId(null);
+        setEditMode(true);
+      }
+      loadSavedKeys();
+    } catch {
+      setToast("Delete failed");
     }
   }
+
+  const filledCount = Object.keys(answerKey).length;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <ScanLine size={22} className="text-indigo" />
-        <h1 className="font-display text-2xl">OMR Scanner</h1>
-      </div>
-
-      <div className="glass-panel p-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label htmlFor="exam-select" className="mb-1.5 block text-xs font-medium text-text-muted">
-              Exam
-            </label>
-            <select
-              id="exam-select"
-              value={examId}
-              onChange={(e) => setExamId(e.target.value)}
-              className="w-full rounded-md border border-border-soft bg-white/92 px-3.5 py-2.5 text-sm"
-            >
-              <option value="">Select an MCQ exam…</option>
-              {exams.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name} · {e.batch?.name ?? "—"}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="student-select" className="mb-1.5 block text-xs font-medium text-text-muted">
-              Student
-            </label>
-            <select
-              id="student-select"
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              disabled={!selectedExam}
-              className="w-full rounded-md border border-border-soft bg-white/92 px-3.5 py-2.5 text-sm disabled:opacity-50"
-            >
-              <option value="">Select a student…</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.rollNumber ? `#${s.rollNumber} · ` : ""}
-                  {s.user.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <h1 className="font-display text-2xl tracking-tight">OMR Solution</h1>
+          <p className="text-sm text-text-muted">Manage answer keys for MCQ exams</p>
         </div>
-
-        {selectedExam && (
-          <div className="text-xs text-text-muted">
-            <span className="font-mono">{selectedExam.totalQuestions}</span> questions ·
-            <span className="font-mono mx-1">+{Number(selectedExam.marksPerCorrect)}</span>/correct
-            <span className="font-mono mx-1">{Number(selectedExam.marksPerWrong)}</span>/wrong
-          </div>
-        )}
       </div>
 
-      {selectedExam && (
-        <AnswerKeyGrid
-          totalQuestions={selectedExam.totalQuestions!}
-          answerKey={answerKey}
-          setAnswer={setAnswer}
-        />
+      {toast && (
+        <div className="rounded-lg bg-success/10 border border-success/20 px-4 py-2 text-xs text-success">
+          {toast}
+        </div>
       )}
 
       <div className="glass-panel p-5">
-        <div className="mb-3 text-2xs uppercase tracking-wider text-text-dim">Upload bubble sheet</div>
-        <label
-          htmlFor="omr-file"
-          className="block cursor-pointer rounded-xl border-2 border-dashed border-border-soft bg-white/40 p-6 text-center hover:bg-white/60 transition-colors"
-        >
-          {preview ? (
-            <img src={preview} alt="preview" className="mx-auto max-h-64 rounded" />
-          ) : (
-            <>
-              <Upload size={22} className="mx-auto text-text-dim mb-2" />
-              <div className="text-sm text-text-muted">
-                Drop a JPEG/PNG bubble sheet here, or click to browse
-              </div>
-              <div className="text-2xs text-text-dim mt-1">Max 10 MB</div>
-            </>
-          )}
-          <input
-            id="omr-file"
-            type="file"
-            accept="image/jpeg,image/png,image/jpg"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
-        {file && (
-          <div className="mt-2 text-xs text-text-muted flex items-center gap-2">
-            <FileText size={13} />
-            {file.name} ({Math.round(file.size / 1024)} KB)
-            <button
-              type="button"
-              onClick={() => handleFile(null)}
-              className="text-danger hover:opacity-80"
-            >
-              <X size={13} />
-            </button>
-          </div>
-        )}
-
-        <div className="mt-4 flex items-center gap-3">
-          <Button
-            onClick={scan}
-            disabled={!file || !selectedExam || !studentId || !answerKeyComplete}
-            loading={scanning}
-          >
-            <ScanLine size={14} /> Scan Sheet
-          </Button>
-          {!answerKeyComplete && selectedExam && (
-            <span className="text-2xs text-warning">
-              Fill in all {selectedExam.totalQuestions} answer-key cells first.
-            </span>
-          )}
-          {error && <span className="text-2xs text-danger">{error}</span>}
-        </div>
+        <CustomSelect
+          label="Exam"
+          value={examId}
+          onChange={setExamId}
+          placeholder="Select an MCQ exam"
+          options={[
+            { value: "", label: "Select an MCQ exam" },
+            ...exams.map((e) => ({
+              value: e.id,
+              label: `${e.name} · ${e.batch?.name ?? "—"}`,
+            })),
+          ]}
+        />
       </div>
 
-      {result && (
-        <ScanResult
-          result={result}
-          exam={selectedExam!}
-          onConfirm={confirmFlagged}
-        />
+      {!examId && savedKeys.length > 0 && (
+        <div className="glass-panel overflow-hidden">
+          <div className="px-5 py-3 border-b border-border-soft">
+            <h2 className="font-display text-sm uppercase tracking-wider text-text-muted">
+              Saved Answer Keys
+            </h2>
+          </div>
+          <div className="divide-y divide-border-soft">
+            {savedKeys.map((k) => (
+              <div
+                key={k.id}
+                className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-white/40"
+              >
+                <div className="min-w-0">
+                  <div className="font-medium text-text-primary truncate">
+                    {k.exam.name} · {k.exam.batch?.name ?? "—"}
+                  </div>
+                  <div className="text-2xs text-text-dim mt-0.5 font-mono">
+                    {k.exam.totalQuestions ?? Object.keys(k.answers).length} questions · Saved on{" "}
+                    {new Date(k.updatedAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExamId(k.examId);
+                      setEditMode(false);
+                    }}
+                    className="px-2.5 py-1 rounded-md bg-white/80 border border-border-soft text-xs text-text-primary hover:bg-white"
+                  >
+                    View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExamId(k.examId);
+                      setEditMode(true);
+                    }}
+                    className="px-2.5 py-1 rounded-md bg-white/80 border border-border-soft text-xs text-text-primary hover:bg-white inline-flex items-center gap-1"
+                  >
+                    <Pencil size={11} /> Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(k.examId)}
+                    className="px-2 py-1 rounded-md text-[#DC2626] hover:bg-[#FEF2F2]"
+                    title="Delete answer key"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!examId && savedKeys.length === 0 && (
+        <div className="glass-panel p-8 text-center text-sm text-text-dim">
+          No answer keys saved yet
+        </div>
+      )}
+
+      {selectedExam && (
+        <>
+          <div className="glass-panel p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-2xs uppercase tracking-wider text-text-dim font-semibold">
+                Answer Key
+              </div>
+              <div className="flex items-center gap-3">
+                {existingKeyId && !editMode && <Badge tone="success">Saved</Badge>}
+                <span className="text-xs text-text-muted tabular-nums">
+                  {filledCount} / {selectedExam.totalQuestions} filled
+                </span>
+              </div>
+            </div>
+            <AnswerKeyGrid
+              totalQuestions={selectedExam.totalQuestions!}
+              answerKey={answerKey}
+              setAnswer={setAnswer}
+              disabled={!editMode}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            {existingKeyId && !editMode ? (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<Pencil size={14} />}
+                  onClick={() => setEditMode(true)}
+                >
+                  Edit Answer Key
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(selectedExam.id)}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-md bg-white/80 border border-[#DC2626]/30 text-[#DC2626] hover:bg-[#FEF2F2]"
+                >
+                  <Trash2 size={12} /> Delete Answer Key
+                </button>
+              </>
+            ) : (
+              <>
+                {existingKeyId && (
+                  <Button variant="secondary" size="sm" onClick={() => setEditMode(false)}>
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={save}
+                  loading={saving}
+                  disabled={filledCount !== selectedExam.totalQuestions}
+                >
+                  {existingKeyId ? "Update Answer Key" : "Save Answer Key"}
+                </Button>
+              </>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -295,162 +305,67 @@ function AnswerKeyGrid({
   totalQuestions,
   answerKey,
   setAnswer,
+  disabled,
 }: {
   totalQuestions: number;
   answerKey: Record<number, number>;
   setAnswer: (q: number, o: number) => void;
+  disabled: boolean;
 }) {
   return (
-    <div className="glass-panel p-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-2xs uppercase tracking-wider text-text-dim">Answer key</div>
-        <span className="text-2xs text-text-dim">
-          {Object.keys(answerKey).length} / {totalQuestions} filled
-        </span>
-      </div>
-      <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-        {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((q) => (
-          <div key={q} className="text-center">
-            <div className="text-2xs text-text-dim mb-0.5 font-mono">Q{q}</div>
-            <div className="flex flex-col gap-0.5">
-              {OPTIONS.map((opt, idx) => {
-                const selected = answerKey[q] === idx + 1;
-                return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setAnswer(q, idx + 1)}
-                    className={`text-2xs py-1 rounded transition-colors ${
-                      selected
-                        ? "bg-indigo text-white"
-                        : "bg-white/60 text-text-muted hover:bg-white"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
+    <div className="grid grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-3">
+      {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((q) => (
+        <div key={q} className="text-center">
+          <div
+            className="mb-1.5 font-semibold"
+            style={{ fontSize: 15, color: "#2C2C2A", lineHeight: 1.1 }}
+          >
+            Q{q}
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ScanResult({
-  result,
-  exam,
-  onConfirm,
-}: {
-  result: ScanResponse;
-  exam: Exam;
-  onConfirm: () => void;
-}) {
-  const total = Number(exam.totalMarks);
-  const percentage = total > 0 ? (result.score / total) * 100 : 0;
-
-  return (
-    <div className="glass-panel p-5">
-      <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-        <div>
-          <div className="text-2xs uppercase tracking-wider text-text-dim">Scan result</div>
-          <div className="text-3xl font-display mt-1 tabular-nums">
-            {result.score.toFixed(1)} / {total}
+          <div className="flex flex-col gap-1.5 items-center">
+            {OPTIONS.map((opt, idx) => {
+              const selected = answerKey[q] === idx + 1;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => setAnswer(q, idx + 1)}
+                  title={`Question ${q} – ${opt}`}
+                  className="transition-all duration-150"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: selected ? "#FFFFFF" : "#2C2C2A",
+                    background: selected ? "#4F46E5" : "transparent",
+                    border: selected ? "1.5px solid #4F46E5" : "1.5px solid #E8E3DA",
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    opacity: disabled ? 0.8 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!selected && !disabled) {
+                      e.currentTarget.style.background = "#FAF7F2";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!selected && !disabled) {
+                      e.currentTarget.style.background = "transparent";
+                    }
+                  }}
+                >
+                  {opt}
+                </button>
+              );
+            })}
           </div>
-          <div className="text-sm text-text-muted">{percentage.toFixed(1)}%</div>
         </div>
-        <div>
-          {result.needs_review ? (
-            <Badge tone="warning">
-              <AlertTriangle size={11} /> Needs review
-            </Badge>
-          ) : (
-            <Badge tone="success">
-              <Check size={11} /> Saved to gradebook
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 mb-4 text-sm">
-        <Stat label="Correct" value={result.correct} tone="success" />
-        <Stat label="Incorrect" value={result.incorrect} tone="danger" />
-        <Stat label="Skipped" value={result.unattempted} tone="neutral" />
-      </div>
-
-      <div className="text-2xs text-text-dim font-mono">
-        ({result.correct} × {Number(exam.marksPerCorrect)}) +
-        ({result.incorrect} × {Number(exam.marksPerWrong)}) = {result.score.toFixed(1)}
-      </div>
-
-      {result.flagged_questions.length > 0 && (
-        <div className="mt-4 p-3 rounded-md bg-warning/10 border border-warning/20">
-          <div className="text-xs font-medium text-warning mb-1">
-            {result.flagged_questions.length} questions flagged for review
-          </div>
-          <div className="text-2xs text-text-muted mb-2">
-            Q: {result.flagged_questions.slice(0, 20).join(", ")}
-            {result.flagged_questions.length > 20 ? "…" : ""}
-          </div>
-          <Button size="sm" onClick={onConfirm}>
-            Confirm and save
-          </Button>
-        </div>
-      )}
-
-      <details className="mt-4">
-        <summary className="text-xs text-text-muted cursor-pointer">
-          Per-question responses ({result.responses.length})
-        </summary>
-        <div className="mt-2 max-h-64 overflow-y-auto">
-          <table className="w-full text-xs">
-            <thead className="text-text-dim">
-              <tr>
-                <th className="text-left px-2 py-1">Q</th>
-                <th className="text-left px-2 py-1">Selected</th>
-                <th className="text-left px-2 py-1">Confidence</th>
-                <th className="text-left px-2 py-1">Fill</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.responses.map((r) => (
-                <tr key={r.question_number} className="border-t border-border-soft">
-                  <td className="px-2 py-1 font-mono">{r.question_number}</td>
-                  <td className="px-2 py-1">
-                    {r.selected_option ? OPTIONS[r.selected_option - 1] : "—"}
-                  </td>
-                  <td className="px-2 py-1">{(r.confidence * 100).toFixed(0)}%</td>
-                  <td className="px-2 py-1">{(r.filled_ratio * 100).toFixed(0)}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "success" | "danger" | "neutral";
-}) {
-  const cls =
-    tone === "success"
-      ? "text-emerald-700"
-      : tone === "danger"
-        ? "text-red-700"
-        : "text-text-muted";
-  return (
-    <div className="glass-panel p-3 text-center">
-      <div className="text-2xs uppercase tracking-wider text-text-dim">{label}</div>
-      <div className={`text-xl font-semibold ${cls} tabular-nums`}>{value}</div>
+      ))}
     </div>
   );
 }

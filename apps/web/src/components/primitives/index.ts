@@ -5,3 +5,5 @@ export { Badge } from "./Badge";
 export { OTPInput } from "./OTPInput";
 export { Skeleton, CardSkeleton, TableSkeleton, PageSkeleton } from "./Skeleton";
 export { SmartDateInput } from "./SmartDateInput";
+export { CustomSelect } from "./CustomSelect";
+export type { SelectOption } from "./CustomSelect";

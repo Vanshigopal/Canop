@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Lock, ShieldCheck, X } from "lucide-react";
+import { Check, CheckCircle, Lock, ShieldCheck, X, XCircle } from "lucide-react";
 import { Button, Input } from "@/components/primitives";
 
 interface ApiKeyInputProps {
@@ -110,10 +110,20 @@ export function ApiKeyInput({
                   Last tested {formatRelative(lastTestedAt)} ·{" "}
                   <span
                     className={
-                      lastTestStatus === "success" ? "text-success font-semibold" : "text-danger font-semibold"
+                      lastTestStatus === "success"
+                        ? "text-success font-semibold inline-flex items-center gap-1"
+                        : "text-danger font-semibold inline-flex items-center gap-1"
                     }
                   >
-                    {lastTestStatus === "success" ? "✓ Valid" : "✗ Invalid"}
+                    {lastTestStatus === "success" ? (
+                      <>
+                        <CheckCircle size={12} /> Valid
+                      </>
+                    ) : (
+                      <>
+                        <XCircle size={12} /> Invalid
+                      </>
+                    )}
                   </span>
                 </>
               ) : (

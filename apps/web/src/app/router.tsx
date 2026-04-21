@@ -159,6 +159,9 @@ const TeachersPage = lazy(() =>
 const BatchesPage = lazy(() =>
   import("@/pages/batches/BatchesPage").then((m) => ({ default: m.BatchesPage })),
 );
+const BatchDetailPage = lazy(() =>
+  import("@/pages/batches/BatchDetailPage").then((m) => ({ default: m.BatchDetailPage })),
+);
 const AttendancePage = lazy(() =>
   import("@/pages/attendance/AttendancePage").then((m) => ({ default: m.AttendancePage })),
 );
@@ -302,6 +305,14 @@ export const router = createBrowserRouter([
         element: lazyPage(
           <RoleGuard roles={["ADMIN", "TEACHER", "STAFF"]}>
             <BatchesPage />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: "batches/:batchId",
+        element: lazyPage(
+          <RoleGuard roles={["ADMIN", "TEACHER", "STAFF"]}>
+            <BatchDetailPage />
           </RoleGuard>,
         ),
       },

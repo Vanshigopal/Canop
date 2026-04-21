@@ -24,18 +24,25 @@ videosRouter.use(authenticate);
 // GET /api/v1/videos
 videosRouter.get("/", async (req, res) => {
   const tenantId = req.user!.tenantId;
-  const { subjectId, chapterNumber, search } = req.query;
+  const { subjectId, chapterNumber, search, batchId } = req.query;
 
   const videos = await withTenantTransaction(prisma, tenantId, async (tx) => {
     // biome-ignore lint/suspicious/noExplicitAny: Prisma where
     const where: any = { deletedAt: null, isPublished: true };
     if (subjectId) where.subjectId = subjectId as string;
     if (chapterNumber) where.chapterNumber = Number(chapterNumber);
-    if (search) {
+    if (batchId) {
       where.OR = [
+        { accessType: "INSTITUTE" },
+        { accessType: "BATCH", batchAccess: { some: { batchId: batchId as string } } },
+      ];
+    }
+    if (search) {
+      const searchOr = [
         { title: { contains: search as string, mode: "insensitive" } },
         { description: { contains: search as string, mode: "insensitive" } },
       ];
+      where.OR = where.OR ? [...where.OR, ...searchOr] : searchOr;
     }
 
     let studentId: string | null = null;

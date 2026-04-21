@@ -1,6 +1,6 @@
-import { Badge } from "@/components/primitives";
+import { Badge, Button } from "@/components/primitives";
 import { api } from "@/lib/api";
-import { ArrowLeft, BarChart3, Calendar, IndianRupee, User } from "lucide-react";
+import { ArrowLeft, BarChart3, Calendar, Download, IndianRupee, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { StudentAttendanceTab } from "./StudentAttendanceTab";
@@ -42,6 +42,7 @@ export function StudentDetailPage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
+  const [downloadingReport, setDownloadingReport] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -53,6 +54,29 @@ export function StudentDetailPage() {
       })
       .catch(() => setLoading(false));
   }, [id]);
+
+  async function downloadReport() {
+    if (!student) return;
+    setDownloadingReport(true);
+    try {
+      const res = await api.get(`/api/v1/students/${student.id}/report`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${student.user.name.replace(/\s+/g, "-")}-report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to generate report. Please try again.");
+    } finally {
+      setDownloadingReport(false);
+    }
+  }
 
   if (loading) return <div className="text-text-dim text-sm">Loading...</div>;
   if (!student) return <div className="text-text-dim text-sm">Student not found</div>;
@@ -83,6 +107,15 @@ export function StudentDetailPage() {
             </div>
           </div>
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<Download size={14} />}
+          onClick={downloadReport}
+          loading={downloadingReport}
+        >
+          Download Report
+        </Button>
       </div>
 
       <div className="border-b border-border-soft mb-6 flex gap-1 overflow-x-auto">
