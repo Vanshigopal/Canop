@@ -155,7 +155,7 @@ export function AdminDashboard() {
         <span className="italic text-coral">{user?.name?.split(" ")[0] || "Admin"}</span>.
       </h1>
       <p className="text-text-muted text-md mb-6">
-        Here&apos;s what&apos;s happening at your institute today.
+        Monitor attendance, performance, revenue, and institute activities in real time.
       </p>
 
       <div className="flex gap-2 items-center mb-6 flex-wrap">
@@ -164,7 +164,7 @@ export function AdminDashboard() {
           onChange={(e) => setFilterBatchId(e.target.value)}
           className="rounded-md border border-border-soft bg-white/92 px-3 py-2 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
         >
-          <option value="">All batches</option>
+          <option value="">select batches</option>
           {batches.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
@@ -176,7 +176,7 @@ export function AdminDashboard() {
           onChange={(e) => setPeriod(e.target.value as Period)}
           className="rounded-md border border-border-soft bg-white/92 px-3 py-2 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
         >
-          <option value="today">Today</option>
+          <option value="today">Today's Overview</option>
           <option value="week">This Week</option>
           <option value="month">This Month</option>
           <option value="quarter">This Quarter</option>
