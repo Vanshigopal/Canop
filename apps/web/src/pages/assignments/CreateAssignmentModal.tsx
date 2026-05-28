@@ -104,41 +104,41 @@ export function CreateAssignmentModal({ onClose, onCreated }: CreateAssignmentMo
 
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Title *</label>
+            <label className="block text-xs font-medium text-text-primary mb-1">Title *</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
-              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">
+            <label className="block text-xs font-medium text-text-primary mb-1">
               Description *
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Instructions</label>
+            <label className="block text-xs font-medium text-text-primary mb-1">Instructions</label>
             <textarea
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">
+              <label className="block text-xs font-medium text-text-primary mb-1">
                 Batches * ({batchIds.length} selected)
               </label>
               <div className="max-h-28 overflow-y-auto border border-border-soft rounded-md bg-white/70 p-2 space-y-1">
@@ -182,11 +182,11 @@ export function CreateAssignmentModal({ onClose, onCreated }: CreateAssignmentMo
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">Subject</label>
+              <label className="block text-xs font-medium text-text-primary mb-1">Subject</label>
               <select
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
               >
                 <option value="">—</option>
                 {subjects.map((s) => (
@@ -200,22 +200,22 @@ export function CreateAssignmentModal({ onClose, onCreated }: CreateAssignmentMo
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">Deadline *</label>
+              <label className="block text-xs font-medium text-text-primary mb-1">Deadline *</label>
               <input
                 type="datetime-local"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">Total marks</label>
+              <label className="block text-xs font-medium text-text-primary mb-1">Total marks</label>
               <input
                 type="number"
                 min="1"
                 value={totalMarks}
                 onChange={(e) => setTotalMarks(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
               />
             </div>
           </div>
@@ -234,18 +234,18 @@ export function CreateAssignmentModal({ onClose, onCreated }: CreateAssignmentMo
           {allowLate && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">
+                <label className="block text-xs font-medium text-text-primary mb-1">
                   Late cutoff (optional)
                 </label>
                 <input
                   type="datetime-local"
                   value={lateDeadline}
                   onChange={(e) => setLateDeadline(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-muted mb-1">
+                <label className="block text-xs font-medium text-text-primary mb-1">
                   Late penalty %
                 </label>
                 <input
@@ -254,7 +254,7 @@ export function CreateAssignmentModal({ onClose, onCreated }: CreateAssignmentMo
                   max="100"
                   value={latePenalty}
                   onChange={(e) => setLatePenalty(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
                 />
               </div>
             </div>
