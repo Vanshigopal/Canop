@@ -125,7 +125,7 @@ export function UploadVideoModal({ subjects, onClose, onUploaded }: UploadVideoM
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
-              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
               placeholder="e.g. Chemical Bonding — Introduction"
             />
           </div>
@@ -138,7 +138,6 @@ export function UploadVideoModal({ subjects, onClose, onUploaded }: UploadVideoM
               maxLength={1000}
               rows={2}
               className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15 resize-y"
-              style={{ borderColor: "#E8E3DA", borderWidth: 1 }}
             />
           </div>
 
@@ -161,7 +160,7 @@ export function UploadVideoModal({ subjects, onClose, onUploaded }: UploadVideoM
                 min="1"
                 value={chapterNumber}
                 onChange={(e) => setChapterNumber(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+                className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
               />
             </div>
           </div>
@@ -173,7 +172,7 @@ export function UploadVideoModal({ subjects, onClose, onUploaded }: UploadVideoM
               value={chapterTitle}
               onChange={(e) => setChapterTitle(e.target.value)}
               maxLength={200}
-              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm"
+              className="w-full px-3 py-2 rounded-md border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
             />
           </div>
 
