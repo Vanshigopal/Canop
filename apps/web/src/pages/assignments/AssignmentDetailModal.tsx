@@ -384,7 +384,6 @@ export function AssignmentDetailModal({
                     <div
                       key={s.id}
                       className="glass-panel p-3 border border-border-soft"
-                      style={{ borderColor: "#E8E3DA" }}
                     >
                       <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                         <div className="font-medium text-sm text-text-primary">
@@ -431,14 +430,14 @@ export function AssignmentDetailModal({
                                   placeholder={`Marks / ${Number(detail.totalMarks)}`}
                                   value={gradeMarks}
                                   onChange={(e) => setGradeMarks(e.target.value)}
-                                  className="w-full px-2 py-1 rounded border border-border-soft text-sm"
+                                  className="w-full px-2 py-1 rounded border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15"
                                 />
                                 <textarea
                                   placeholder="Feedback (optional)"
                                   value={gradeFeedback}
                                   onChange={(e) => setGradeFeedback(e.target.value)}
                                   rows={2}
-                                  className="w-full px-2 py-1 rounded border border-border-soft text-sm"
+                                  className="w-full px-2 py-1 rounded border border-border-soft bg-white/92 text-sm text-text-primary outline-none focus:border-indigo focus:ring-2 focus:ring-indigo/15 resize-y"
                                 />
                                 <div className="flex gap-2">
                                   <Button
