@@ -150,6 +150,9 @@ const StudentsPage = lazy(() =>
 const StudentDetailPage = lazy(() =>
   import("@/pages/students/StudentDetailPage").then((m) => ({ default: m.StudentDetailPage })),
 );
+const ParentDetailPage = lazy(() =>
+  import("@/pages/parents/ParentDetailPage").then((m) => ({ default: m.ParentDetailPage })),
+);
 const AttendanceScanPage = lazy(() =>
   import("@/pages/attendance/AttendanceScanPage").then((m) => ({ default: m.AttendanceScanPage })),
 );
@@ -291,6 +294,10 @@ export const router = createBrowserRouter([
             <StudentDetailPage />
           </RoleGuard>,
         ),
+      },
+      {
+        path: "parents/:id",
+        element: lazyPage(<ParentDetailPage />),
       },
       {
         path: "teachers",
