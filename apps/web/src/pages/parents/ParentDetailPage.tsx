@@ -1,0 +1,276 @@
+import { Badge, Button } from "@/components/primitives";
+import { api } from "@/lib/api";
+import { ArrowLeft, BarChart3, Calendar, Download, IndianRupee, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { StudentAttendanceTab } from "../students/StudentAttendanceTab";
+import { AcademicTab } from "../students/tabs/AcademicTab";
+import { FeesTab } from "../students/tabs/FeesTab";
+import { ParentOverviewCard } from "./widgets/ParentOverviewCard";
+
+interface Student {
+  id: string;
+  rollNumber: string | null;
+  enrolledAt: string;
+  dateOfBirth: string | null;
+  gender: string | null;
+  city: string | null;
+  state: string | null;
+  bloodGroup: string | null;
+  user: { id: string; name: string; email: string; phone: string | null; isActive: boolean };
+  batch: { id: string; name: string } | null;
+  class: { id: string; name: string } | null;
+  guardians: Array<{
+    id: string;
+    name: string;
+    relation: string;
+    phone: string;
+    isEmergency: boolean;
+  }>;
+}
+
+type Tab = "overview" | "attendance" | "academic" | "fees";
+
+const TABS: Array<{ key: Tab; label: string; icon: typeof User }> = [
+  { key: "overview", label: "Child Overview", icon: User },
+  { key: "attendance", label: "Attendance Report", icon: Calendar },
+  { key: "academic", label: "Child Progress", icon: BarChart3 },
+  { key: "fees", label: "Fees details", icon: IndianRupee },
+];
+
+export function ParentDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [student, setStudent] = useState<Student | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [downloadingReport, setDownloadingReport] = useState(false);
+  const children = ["Child 1", "Child 2"];
+  const parentName = "Parent Name";
+
+  useEffect(() => {
+    if (!id) return;
+    api
+      .get(`/api/v1/students/${id}`)
+      .then((r) => {
+        setStudent(r.data.data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [id]);
+
+  async function downloadReport() {
+    if (!student) return;
+    setDownloadingReport(true);
+    try {
+      const res = await api.get(`/api/v1/students/${student.id}/report`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${student.user.name.replace(/\s+/g, "-")}-report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to generate report. Please try again.");
+    } finally {
+      setDownloadingReport(false);
+    }
+  }
+
+  if (loading) return <div className="text-text-dim text-sm">Loading...</div>;
+  if (!student) {
+  return (
+    <div className="p-6">
+        <select className="mb-3 rounded-xl border border-border-soft bg-white px-3 py-2 text-sm shadow-soft">
+            {children.map((child) => (
+            <option key={child}>{child}</option>
+ ))}
+</select>
+      <div>
+        <p className="text-sm text-text-muted">
+          Good Evening,
+        </p>
+
+        <h1 className="text-3xl font-bold">
+          {parentName}
+        </h1>
+
+        <p className="mt-1 text-sm text-text-muted">
+          Monitor your child’s academic progress, attendance, and fees.
+        </p>
+        <p className="mt-2 text-xs text-text-dim">
+          {new Date().toLocaleDateString()}
+        </p>
+      </div>
+      <ParentOverviewCard />
+      <div className="rounded-2xl border border-border-soft bg-white p-5 shadow-soft">
+        <h2 className="text-lg font-semibold">Recent Notifications</h2>
+
+        <div className="mt-4 space-y-3">
+
+          <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+            <p className="text-sm font-medium">
+              Attendance Alert
+            </p>
+
+            <p className="mt-1 text-xs text-text-muted">
+              Your child attendance dropped below 90%.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+            <p className="text-sm font-medium">
+              Fee Reminder
+            </p>
+
+            <p className="mt-1 text-xs text-text-muted">
+              Next fee installment due on 25th May.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+  return (
+    <div>
+      <Link
+        to="/parents"
+        className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-primary mb-4"
+      >
+        <ArrowLeft size={14} /> Back to parents
+      </Link>
+
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-pastel-sky/70 grid place-items-center text-lg font-semibold text-indigo">
+            {student.user.name.slice(0, 2).toUpperCase()}
+          </div>
+          <div>
+            <p className="mb-2 text-sm font-medium text-text-muted">
+              Select Child
+            </p>
+            <div className="mb-1">
+                <select className="w-full sm:w-auto text-sm border border-border-soft rounded-xl px-3 py-2 bg-white shadow-soft">
+                  {children.map((child) => (
+                    <option key={child}>{child}</option>))}
+                </select>
+            </div>
+            <h1 className="font-display text-2xl tracking-tight">
+                Welcome back, {parentName}
+            </h1>
+            <div className="flex items-center gap-2 mt-1 text-xs text-text-muted">
+              {student.rollNumber && <span className="font-mono">#{student.rollNumber}</span>}
+              {student.batch && <span>· {student.batch.name}</span>}
+              {student.class && <span>· {student.class.name}</span>}
+              <Badge tone={student.user.isActive ? "success" : "neutral"}>
+                {student.user.isActive ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+          </div>
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<Download size={14} />}
+          onClick={downloadReport}
+          loading={downloadingReport}
+        >
+          Download Report
+        </Button>
+      </div>
+
+      <div className="border-b border-border-soft mb-6 flex gap-1 overflow-x-auto">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
+                tab === t.key
+                  ? "border-indigo text-text-primary"
+                  : "border-transparent text-text-muted hover:text-text-primary"
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Icon size={14} /> {t.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "overview" && <StudentOverview student={student} />}
+      {tab === "attendance" && <StudentAttendanceTab studentId={student.id} />}
+      {tab === "academic" && <AcademicTab studentId={student.id} />}
+      {tab === "fees" && <FeesTab studentId={student.id} />}
+    </div>
+  );
+}
+
+function StudentOverview({ student }: { student: Student }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="glass-panel p-4">
+        <h3 className="font-display text-sm uppercase tracking-wider text-text-muted mb-3">
+          Child Contact info
+        </h3>
+        <dl className="space-y-2 text-sm">
+          <Row label="Email" value={student.user.email} />
+          <Row label="Phone" value={student.user.phone ?? "—"} />
+          <Row label="City" value={student.city ?? "—"} />
+          <Row label="State" value={student.state ?? "—"} />
+        </dl>
+      </div>
+      <div className="glass-panel p-4">
+        <h3 className="font-display text-sm uppercase tracking-wider text-text-muted mb-3">
+          Student Profile
+        </h3>
+        <dl className="space-y-2 text-sm">
+          <Row
+            label="Date of Birth"
+            value={student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : "—"}
+          />
+          <Row label="Gender" value={student.gender ?? "—"} />
+          <Row label="Blood group" value={student.bloodGroup ?? "—"} />
+          <Row label="Enrolled" value={new Date(student.enrolledAt).toLocaleDateString()} />
+        </dl>
+      </div>
+      <div className="glass-panel p-4 md:col-span-2">
+        <h3 className="font-display text-sm uppercase tracking-wider text-text-muted mb-3">
+          Parent & Guardian Details
+        </h3>
+        <div className="space-y-2">
+          {student.guardians.length === 0 && (
+            <p className="text-xs text-text-dim">No guardians recorded.</p>
+          )}
+          {student.guardians.map((g) => (
+            <div key={g.id} className="flex items-center gap-3 text-sm">
+              <span className="text-text-primary font-medium">{g.name}</span>
+              <span className="text-text-muted text-xs">· {g.relation}</span>
+              <span className="text-text-muted text-xs font-mono">· {g.phone}</span>
+              {g.isEmergency && <Badge tone="warning">Emergency</Badge>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <dt className="text-2xs uppercase tracking-wider text-text-dim">{label}</dt>
+      <dd className="text-sm text-text-primary">{value}</dd>
+    </div>
+  );
+}
