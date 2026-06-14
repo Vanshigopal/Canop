@@ -145,7 +145,7 @@ export function OmrPage() {
       <div className="flex items-center gap-3">
         <ScanLine size={22} className="text-indigo" />
         <div>
-          <h1 className="font-display text-2xl tracking-tight">OMR Solution</h1>
+          <h1 className="font-display text-2xl tracking-tight">OMR</h1>
           <p className="text-sm text-text-muted">Manage answer keys for MCQ exams</p>
         </div>
       </div>
