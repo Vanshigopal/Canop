@@ -52,7 +52,7 @@ export const adminNavigation: NavGroup[] = [
     label: "Academics",
     items: [
       { name: "Exams & Marks", path: "/exams", icon: FileText },
-      { name: "OMR Solution", path: "/omr", icon: ScanLine },
+      { name: "OMR", path: "/omr", icon: ScanLine },
       { name: "Gradebook", path: "/gradebook", icon: BookOpen },
       { name: "Retests", path: "/retests", icon: RotateCcw },
       { name: "Videos", path: "/videos", icon: Video },
